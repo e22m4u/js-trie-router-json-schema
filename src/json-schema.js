@@ -10,4 +10,4 @@ export const JSONType = {
   OBJECT: 'object',
   ARRAY: 'array',
   NULL: 'null',
-}
+};
