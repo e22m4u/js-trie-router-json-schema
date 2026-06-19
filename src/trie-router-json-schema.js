@@ -1,0 +1,558 @@
+import HttpErrors from 'http-errors';
+import {createAjv} from './create-ajv.js';
+import {Service} from '@e22m4u/js-service';
+import {createError} from './utils/create-error.js';
+import {InvalidArgumentError} from '@e22m4u/js-format';
+import {RouterHookType, RouterHookRegistry} from '@e22m4u/js-trie-router';
+
+/**
+ * Trie router json schema.
+ */
+export class TrieRouterJsonSchema extends Service {
+  /**
+   * Options.
+   */
+  _options = {};
+
+  /**
+   * Parameters validators.
+   *
+   * Key: is `${route.method}/${route.path}`
+   * Value: Ajv compiled validator
+   *
+   * @type {Map<string, Function>}
+   */
+  _parametersValidatiors = new Map();
+
+  /**
+   * Request body validators.
+   *
+   * Key: is `${route.method}/${route.path}`
+   * Value: Ajv compiled validator
+   *
+   * @type {Map<string, Function>}
+   */
+  _requestBodyValidatiors = new Map();
+
+  /**
+   * Response body validators.
+   *
+   * Key: is `${route.method}/${route.path}`
+   * Value: Ajv compiled validator
+   *
+   * @type {Map<string, Function>}
+   */
+  _responseBodyValidatiors = new Map();
+
+  /**
+   * Parameters ajv.
+   *
+   * @type {import('ajv/dist/2020.js').Ajv2020|undefined}
+   */
+  _parametersAjv;
+
+  /**
+   * Request body ajv.
+   *
+   * @type {import('ajv/dist/2020.js').Ajv2020|undefined}
+   */
+  _requestBodyAjv;
+
+  /**
+   * Response body ajv.
+   *
+   * @type {import('ajv/dist/2020.js').Ajv2020|undefined}
+   */
+  _responseBodyAjv;
+
+  /**
+   * Constructor.
+   *
+   * @param {import('@e22m4u/js-service').ServiceContainer} [container]
+   * @param {object} [options]
+   */
+  constructor(container, options = {}) {
+    super(container);
+    // options
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
+      throw new InvalidArgumentError(
+        'Parameter "options" must be an Object, but %v was given.',
+        options,
+      );
+    }
+    // options.noRequestValidation
+    if (options.noRequestValidation !== undefined) {
+      if (typeof options.noRequestValidation !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noRequestValidation" must be a Boolean, but %v was given.',
+          options.noRequestValidation,
+        );
+      }
+    }
+    // options.noResponseValidation
+    if (options.noResponseValidation !== undefined) {
+      if (typeof options.noResponseValidation !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noResponseValidation" must be a Boolean, but %v was given.',
+          options.noResponseValidation,
+        );
+      }
+    }
+    // options.noParseParametersJson
+    if (options.noParseParametersJson !== undefined) {
+      if (typeof options.noParseParametersJson !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noParseParametersJson" must be a Boolean, but %v was given.',
+          options.noParseParametersJson,
+        );
+      }
+    }
+    // options.noCoerceTypesInParameters
+    if (options.noCoerceTypesInParameters !== undefined) {
+      if (typeof options.noCoerceTypesInParameters !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noCoerceTypesInParameters" must be a Boolean, but %v was given.',
+          options.noCoerceTypesInParameters,
+        );
+      }
+    }
+    // options.noCoerceTypesInRequestBody
+    if (options.noCoerceTypesInRequestBody !== undefined) {
+      if (typeof options.noCoerceTypesInRequestBody !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noCoerceTypesInRequestBody" must be a Boolean, but %v was given.',
+          options.noCoerceTypesInRequestBody,
+        );
+      }
+    }
+    // options.noCoerceTypesInResponseBody
+    if (options.noCoerceTypesInResponseBody !== undefined) {
+      if (typeof options.noCoerceTypesInResponseBody !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noCoerceTypesInResponseBody" must be a Boolean, but %v was given.',
+          options.noCoerceTypesInResponseBody,
+        );
+      }
+    }
+    // options.noDefaultValuesInParameters
+    if (options.noDefaultValuesInParameters !== undefined) {
+      if (typeof options.noDefaultValuesInParameters !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noDefaultValuesInParameters" must be a Boolean, but %v was given.',
+          options.noDefaultValuesInParameters,
+        );
+      }
+    }
+    // options.noDefaultValuesInRequestBody
+    if (options.noDefaultValuesInRequestBody !== undefined) {
+      if (typeof options.noDefaultValuesInRequestBody !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noDefaultValuesInRequestBody" must be a Boolean, but %v was given.',
+          options.noDefaultValuesInRequestBody,
+        );
+      }
+    }
+    // options.noDefaultValuesInResponseBody
+    if (options.noDefaultValuesInResponseBody !== undefined) {
+      if (typeof options.noDefaultValuesInResponseBody !== 'boolean') {
+        throw new InvalidArgumentError(
+          'Option "noDefaultValuesInResponseBody" must be a Boolean, but %v was given.',
+          options.noDefaultValuesInResponseBody,
+        );
+      }
+    }
+    this._options = options;
+    const hookRegistry = this.getService(RouterHookRegistry);
+    // в момент определения маршрута компилируются
+    // валидаторы согласно спецификации из метаданных
+    if (
+      !hookRegistry.hasHook(
+        RouterHookType.ON_DEFINE_ROUTE,
+        onDefineRouteJsonSchemaHook,
+      )
+    ) {
+      hookRegistry.addHook(
+        RouterHookType.ON_DEFINE_ROUTE,
+        onDefineRouteJsonSchemaHook,
+      );
+    }
+    // если требуется проверка данных входящего запроса,
+    // то выполняется регистрация "preHandler" хука
+    if (
+      !options.noRequestValidation &&
+      !hookRegistry.hasHook(
+        RouterHookType.PRE_HANDLER,
+        requestValidationJsonSchemaHook,
+      )
+    ) {
+      hookRegistry.addHook(
+        RouterHookType.PRE_HANDLER,
+        requestValidationJsonSchemaHook,
+      );
+    }
+    // если требуется проверка данных ответа сервера,
+    // то выполняется регистрация "postHandler" хука
+    if (
+      !options.noResponseValidation &&
+      !hookRegistry.hasHook(
+        RouterHookType.POST_HANDLER,
+        responseValidationJsonSchemaHook,
+      )
+    ) {
+      hookRegistry.addHook(
+        RouterHookType.POST_HANDLER,
+        responseValidationJsonSchemaHook,
+      );
+    }
+  }
+
+  /**
+   * Get parameters Ajv instance.
+   *
+   * @returns {import('ajv/dist/2020.js').Ajv2020}
+   */
+  _getParametersAjvInstance() {
+    if (this._parametersAjv) {
+      return this._parametersAjv;
+    }
+    this._parametersAjv = createAjv({
+      coerceTypes: !this._options.noCoerceTypesInParameters,
+      removeAdditional: true,
+      useDefaults: !this._options.noDefaultValuesInParameters,
+    });
+    return this._parametersAjv;
+  }
+
+  /**
+   * Get request body Ajv instance.
+   *
+   * @returns {import('ajv/dist/2020.js').Ajv2020}
+   */
+  _getRequestBodyAjvInstance() {
+    if (this._requestBodyAjv) {
+      return this._requestBodyAjv;
+    }
+    this._requestBodyAjv = createAjv({
+      coerceTypes: !this._options.noCoerceTypesInRequestBody,
+      removeAdditional: true,
+      useDefaults: !this._options.noDefaultValuesInRequestBody,
+    });
+    return this._requestBodyAjv;
+  }
+
+  /**
+   * Get response body Ajv instance.
+   *
+   * @returns {import('ajv/dist/2020.js').Ajv2020}
+   */
+  _getResponseBodyAjvInstance() {
+    if (this._responseBodyAjv) {
+      return this._responseBodyAjv;
+    }
+    this._responseBodyAjv = createAjv({
+      coerceTypes: !this._options.noCoerceTypesInResponseBody,
+      removeAdditional: true,
+      useDefaults: !this._options.noDefaultValuesInResponseBody,
+    });
+    return this._responseBodyAjv;
+  }
+
+  /**
+   * Define schema.
+   *
+   * @param {object} schema
+   * @returns {this}
+   */
+  defineSchema(schema) {
+    if (!schema || typeof schema.$id !== 'string') {
+      throw new InvalidArgumentError(
+        'Schema must have an "$id" string property, but %v was given.',
+        schema.$id,
+      );
+    }
+    this._getParametersAjvInstance().addSchema(schema);
+    this._getRequestBodyAjvInstance().addSchema(schema);
+    this._getResponseBodyAjvInstance().addSchema(schema);
+    return this;
+  }
+}
+
+/**
+ * On define route.
+ *
+ * @param {import('@e22m4u/js-trie-router').RouteDefinition} routeDef
+ * @param {import('@e22m4u/js-service').ServiceContainer} container
+ */
+export function onDefineRouteJsonSchemaHook(routeDef, container) {
+  if (
+    !routeDef ||
+    typeof routeDef !== 'object' ||
+    !routeDef.meta ||
+    typeof routeDef.meta !== 'object' ||
+    routeDef.meta.jsonSchema === undefined ||
+    routeDef.meta.jsonSchema === false
+  ) {
+    return;
+  }
+  const inst = container.get(TrieRouterJsonSchema);
+  const options = inst._options;
+  const schemaObj = routeDef.meta.jsonSchema;
+  // формирование уникального ключа маршрута
+  const method = (routeDef.method || '').toUpperCase();
+  const path = routeDef.path || '/';
+  const routeKey = `${method}/${path}`;
+  // компиляция схем для входящих данных запроса
+  if (!options.noRequestValidation) {
+    const hasParams = schemaObj.params !== undefined;
+    const hasQuery = schemaObj.query !== undefined;
+    const hasHeaders = schemaObj.headers !== undefined;
+    const hasCookies = schemaObj.cookies !== undefined;
+    // объединение params, query, headers, cookies в единую
+    // структуру объекта параметров
+    if (hasParams || hasQuery || hasHeaders || hasCookies) {
+      const parametersSchema = {
+        type: 'object',
+        properties: {},
+      };
+      if (hasParams) {
+        parametersSchema.properties.params = schemaObj.params;
+      }
+      if (hasQuery) {
+        parametersSchema.properties.query = schemaObj.query;
+      }
+      if (hasHeaders) {
+        parametersSchema.properties.headers = schemaObj.headers;
+        // предполагается, что разработчик всегда
+        // указывает заголовки в нижнем регистре
+      }
+      if (hasCookies) {
+        parametersSchema.properties.cookies = schemaObj.cookies;
+      }
+      // компиляция схемы для параметров
+      const validateParams = inst
+        ._getParametersAjvInstance()
+        .compile(parametersSchema);
+      inst._parametersValidatiors.set(routeKey, validateParams);
+    }
+    // компиляция схемы для тела запроса
+    if (schemaObj.body !== undefined) {
+      // для корректного приведения типа примитивов,
+      // схема тела оборачивается в схему объека
+      const wrappedRequestBodySchema = {
+        type: 'object',
+        properties: {body: schemaObj.body},
+      };
+      const validateRequestBody = inst
+        ._getRequestBodyAjvInstance()
+        .compile(wrappedRequestBodySchema);
+      inst._requestBodyValidatiors.set(routeKey, validateRequestBody);
+    }
+  }
+  // компиляция схем для тела ответа
+  if (!options.noResponseValidation && schemaObj.response !== undefined) {
+    if (
+      schemaObj.response === null ||
+      typeof schemaObj.response !== 'object' ||
+      Array.isArray(schemaObj.response)
+    ) {
+      throw new InvalidArgumentError(
+        'The "response" schema definition must be an Object ' +
+          'keyed by status codes, but %v was given.',
+        schemaObj.response,
+      );
+    }
+    const responseValidators = {};
+    for (const [statusCode, schema] of Object.entries(schemaObj.response)) {
+      const wrappedResponseSchema = {
+        type: 'object',
+        properties: {response: schema},
+      };
+      responseValidators[statusCode] = inst
+        ._getResponseBodyAjvInstance()
+        .compile(wrappedResponseSchema);
+    }
+    if (Object.keys(responseValidators).length > 0) {
+      inst._responseBodyValidatiors.set(routeKey, responseValidators);
+    }
+  }
+}
+
+/**
+ * Pre-handler hook.
+ *
+ * @type {import('@e22m4u/js-trie-router').PreHandlerHook}
+ */
+export function requestValidationJsonSchemaHook(ctx) {
+  const schemaObject = (ctx.meta || {}).jsonSchema;
+  if (!schemaObject || schemaObject === true) {
+    return;
+  }
+  const inst = ctx.container.get(TrieRouterJsonSchema);
+  const options = inst._options;
+  if (options.noRequestValidation) {
+    return;
+  }
+  const routeKey = `${ctx.route.method}/${ctx.route.path}`;
+  // валидация параметров (params, query, headers, cookies)
+  const validateParams = inst._parametersValidatiors.get(routeKey);
+  if (validateParams) {
+    const reqParameters = {
+      params: ctx.params,
+      query: ctx.query,
+      headers: ctx.headers,
+      cookies: ctx.cookies,
+    };
+    // парсинг строковых значений,
+    // похожих на массивы или объекты
+    if (!options.noParseParametersJson) {
+      reqParameters.params = parseJsonParameters(reqParameters.params);
+      reqParameters.query = parseJsonParameters(reqParameters.query);
+      reqParameters.headers = parseJsonParameters(reqParameters.headers);
+      reqParameters.cookies = parseJsonParameters(reqParameters.cookies);
+    }
+    const isValid = validateParams(reqParameters);
+    if (!isValid) {
+      throw createError(
+        HttpErrors.BadRequest,
+        'Request parameters validation failed.',
+        validateParams.errors,
+      );
+    }
+    // ajv мутирует объект reqParameters, выполняет приведение
+    // типов, удаление лишние поля и устанавливает дефолтные значения,
+    // поэтому нужно вернуть новые значения обратно в контекст
+    if (reqParameters.params !== undefined) {
+      ctx.params = reqParameters.params;
+    }
+    if (reqParameters.query !== undefined) {
+      ctx.query = reqParameters.query;
+    }
+    if (reqParameters.headers !== undefined) {
+      ctx.headers = reqParameters.headers;
+    }
+    if (reqParameters.cookies !== undefined) {
+      ctx.cookies = reqParameters.cookies;
+    }
+  }
+  // валидация тела запроса
+  const validateBody = inst._requestBodyValidatiors.get(routeKey);
+  if (validateBody) {
+    const bodyWrapper = {body: ctx.body};
+    const isValid = validateBody(bodyWrapper);
+    if (!isValid) {
+      // очистка технического префикса "body"
+      // из путей ошибок для красоты
+      validateBody.errors.forEach(e => {
+        if (e.instancePath.startsWith('/body')) {
+          e.instancePath = e.instancePath.replace('/body', '') || '/';
+        }
+      });
+      throw createError(
+        HttpErrors.BadRequest,
+        'Request body validation failed.',
+        validateBody.errors,
+      );
+    }
+    // возвращение данных в контекст, так как ajv валидатор
+    // мог мутировать объект (например, приведение типов
+    // или добавление значений по умолчанию)
+    ctx.body = bodyWrapper.body;
+  }
+}
+
+/**
+ * Post-handler hook.
+ *
+ * @type {import('@e22m4u/js-trie-router').PostHandlerHook}
+ */
+export function responseValidationJsonSchemaHook(ctx, data) {
+  const schemaObject = (ctx.meta || {}).jsonSchema;
+  if (!schemaObject || schemaObject === true) {
+    return;
+  }
+  // если контроллер вернет поток или буфер, ajv попытается
+  // проверить этот сложный объект по JSON-схеме, и это приведет
+  // к ошибкам валидации или падению приложения
+  if (
+    Buffer.isBuffer(data) ||
+    (typeof data === 'object' && typeof data.pipe === 'function')
+  ) {
+    return data;
+  }
+  const inst = ctx.container.get(TrieRouterJsonSchema);
+  const options = inst._options;
+  if (options.noResponseValidation) {
+    return;
+  }
+  const routeKey = `${ctx.route.method}/${ctx.route.path}`;
+  const responseValidators = inst._responseBodyValidatiors.get(routeKey);
+  if (!responseValidators) {
+    return;
+  }
+  // если статус явно не установлен в обработчике,
+  // по спецификации HTTP по умолчанию используется 200
+  const statusCode = String(ctx.response.statusCode || 200);
+  const statusClassLower = statusCode[0] + 'xx'; // например: 2xx
+  const statusClassUpper = statusCode[0] + 'XX'; // например: 2XX
+  // поиск подходящего валидатора по приоритетам:
+  // 1. точное совпадение (например, "200")
+  // 2. совпадение по классу (например, "2xx" или "2XX")
+  // 3. значение по умолчанию ("default" или "DEFAULT")
+  const validateResponse =
+    responseValidators[statusCode] ||
+    responseValidators[statusClassLower] ||
+    responseValidators[statusClassUpper] ||
+    responseValidators['default'] ||
+    responseValidators['DEFAULT'];
+  if (validateResponse) {
+    const wrappedResponse = {response: data};
+    const isValid = validateResponse(wrappedResponse);
+    if (!isValid) {
+      // очистка технического префикса "response"
+      // из путей ошибок для красоты
+      validateResponse.errors.forEach(e => {
+        if (e.instancePath.startsWith('/response')) {
+          e.instancePath = e.instancePath.replace('/response', '') || '/';
+        }
+      });
+      throw createError(
+        HttpErrors.InternalServerError,
+        'Response body validation failed.',
+        validateResponse.errors,
+      );
+    }
+    // возвращение данных, так как ajv валидатор мог мутировать объект
+    // (например, приведение типов или добавление значений по умолчанию)
+    return wrappedResponse.response;
+  }
+  return;
+}
+
+/**
+ * Parse JSON parameters.
+ *
+ * @param {object|undefined} obj
+ * @returns {object|undefined}
+ */
+export function parseJsonParameters(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return obj;
+  }
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (
+      typeof val === 'string' &&
+      (val.startsWith('{') || val.startsWith('['))
+    ) {
+      try {
+        result[key] = JSON.parse(val);
+      } catch {
+        result[key] = val;
+      }
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
