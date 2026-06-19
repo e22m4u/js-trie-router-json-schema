@@ -55,7 +55,7 @@ const router = new TrieRouter();
 router.useService(TrieRouterJsonSchema);
 ```
 
-Определение спецификации для данных маршрута.
+Определение спецификации для данных запроса и ответа.
 
 ```js
 import {HttpMethod} from '@e22m4u/js-trie-router';
