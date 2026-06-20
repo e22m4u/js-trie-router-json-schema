@@ -1,5 +1,6 @@
 import {expect} from 'chai';
 import {format} from '@e22m4u/js-format';
+import {JSONType} from './json-schema.js';
 import {ServiceContainer} from '@e22m4u/js-service';
 import {RouterHookRegistry, RouterHookType} from '@e22m4u/js-trie-router';
 
@@ -14,8 +15,8 @@ describe('TrieRouterJsonSchema', function () {
   describe('constructor', function () {
     it('should pass the given container to the super class', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container);
-      expect(service.container).to.be.eq(container);
+      const S = new TrieRouterJsonSchema(container);
+      expect(S.container).to.be.eq(container);
     });
 
     it('should require the parameter "options" to be an Object', function () {
@@ -232,8 +233,8 @@ describe('TrieRouterJsonSchema', function () {
         noResponseValidation: false,
         noParseParametersJson: true,
       };
-      const service = new TrieRouterJsonSchema(container, options);
-      expect(service._options).to.be.eql(options);
+      const S = new TrieRouterJsonSchema(container, options);
+      expect(S._options).to.be.eql(options);
     });
 
     it('should register "onDefineRouteJsonSchemaHook" in the hook registry', function () {
@@ -294,17 +295,17 @@ describe('TrieRouterJsonSchema', function () {
 
   describe('_getParametersAjvInstance', function () {
     it('should return the same Ajv instance on subsequent calls', function () {
-      const service = new TrieRouterJsonSchema();
-      const res1 = service._getParametersAjvInstance();
-      const res2 = service._getParametersAjvInstance();
+      const S = new TrieRouterJsonSchema();
+      const res1 = S._getParametersAjvInstance();
+      const res2 = S._getParametersAjvInstance();
       expect(res1).to.be.an('object');
       expect(res1).to.be.eq(res2);
     });
 
     it('should create an Ajv instance with correct default options', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container);
-      const ajv = service._getParametersAjvInstance();
+      const S = new TrieRouterJsonSchema(container);
+      const ajv = S._getParametersAjvInstance();
       expect(ajv.opts.coerceTypes).to.be.true;
       expect(ajv.opts.useDefaults).to.be.true;
       expect(ajv.opts.removeAdditional).to.be.true;
@@ -312,11 +313,11 @@ describe('TrieRouterJsonSchema', function () {
 
     it('should create an Ajv instance respecting custom options', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container, {
+      const S = new TrieRouterJsonSchema(container, {
         noCoerceTypesInParameters: true,
         noDefaultValuesInParameters: true,
       });
-      const ajv = service._getParametersAjvInstance();
+      const ajv = S._getParametersAjvInstance();
       expect(ajv.opts.coerceTypes).to.be.false;
       expect(ajv.opts.useDefaults).to.be.false;
       expect(ajv.opts.removeAdditional).to.be.true;
@@ -325,17 +326,17 @@ describe('TrieRouterJsonSchema', function () {
 
   describe('_getRequestBodyAjvInstance', function () {
     it('should return the same Ajv instance on subsequent calls', function () {
-      const service = new TrieRouterJsonSchema();
-      const res1 = service._getRequestBodyAjvInstance();
-      const res2 = service._getRequestBodyAjvInstance();
+      const S = new TrieRouterJsonSchema();
+      const res1 = S._getRequestBodyAjvInstance();
+      const res2 = S._getRequestBodyAjvInstance();
       expect(res1).to.be.an('object');
       expect(res1).to.be.eq(res2);
     });
 
     it('should create an Ajv instance with correct default options', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container);
-      const ajv = service._getRequestBodyAjvInstance();
+      const S = new TrieRouterJsonSchema(container);
+      const ajv = S._getRequestBodyAjvInstance();
       expect(ajv.opts.coerceTypes).to.be.true;
       expect(ajv.opts.useDefaults).to.be.true;
       expect(ajv.opts.removeAdditional).to.be.true;
@@ -343,11 +344,11 @@ describe('TrieRouterJsonSchema', function () {
 
     it('should create an Ajv instance respecting custom options', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container, {
+      const S = new TrieRouterJsonSchema(container, {
         noCoerceTypesInRequestBody: true,
         noDefaultValuesInRequestBody: true,
       });
-      const ajv = service._getRequestBodyAjvInstance();
+      const ajv = S._getRequestBodyAjvInstance();
       expect(ajv.opts.coerceTypes).to.be.false;
       expect(ajv.opts.useDefaults).to.be.false;
       expect(ajv.opts.removeAdditional).to.be.true;
@@ -356,17 +357,17 @@ describe('TrieRouterJsonSchema', function () {
 
   describe('_getResponseBodyAjvInstance', function () {
     it('should return the same Ajv instance on subsequent calls', function () {
-      const service = new TrieRouterJsonSchema();
-      const res1 = service._getResponseBodyAjvInstance();
-      const res2 = service._getResponseBodyAjvInstance();
+      const S = new TrieRouterJsonSchema();
+      const res1 = S._getResponseBodyAjvInstance();
+      const res2 = S._getResponseBodyAjvInstance();
       expect(res1).to.be.an('object');
       expect(res1).to.be.eq(res2);
     });
 
     it('should create an Ajv instance with correct default options', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container);
-      const ajv = service._getResponseBodyAjvInstance();
+      const S = new TrieRouterJsonSchema(container);
+      const ajv = S._getResponseBodyAjvInstance();
       expect(ajv.opts.coerceTypes).to.be.true;
       expect(ajv.opts.useDefaults).to.be.true;
       expect(ajv.opts.removeAdditional).to.be.true;
@@ -374,11 +375,11 @@ describe('TrieRouterJsonSchema', function () {
 
     it('should create an Ajv instance respecting custom options', function () {
       const container = new ServiceContainer();
-      const service = new TrieRouterJsonSchema(container, {
+      const S = new TrieRouterJsonSchema(container, {
         noCoerceTypesInResponseBody: true,
         noDefaultValuesInResponseBody: true,
       });
-      const ajv = service._getResponseBodyAjvInstance();
+      const ajv = S._getResponseBodyAjvInstance();
       expect(ajv.opts.coerceTypes).to.be.false;
       expect(ajv.opts.useDefaults).to.be.false;
       expect(ajv.opts.removeAdditional).to.be.true;
@@ -387,8 +388,8 @@ describe('TrieRouterJsonSchema', function () {
 
   describe('defineSchema', function () {
     it('should require the parameter "schema" to be an Object', function () {
-      const service = new TrieRouterJsonSchema();
-      const throwable = v => () => service.defineSchema(v);
+      const S = new TrieRouterJsonSchema();
+      const throwable = v => () => S.defineSchema(v);
       const error = v =>
         format('Schema must be an Object, but %s was given.', v);
       expect(throwable('str')).to.throw(error('"str"'));
@@ -403,8 +404,8 @@ describe('TrieRouterJsonSchema', function () {
     });
 
     it('should require the schema to have an "$id" property as a non-empty String', function () {
-      const service = new TrieRouterJsonSchema();
-      const throwable = v => () => service.defineSchema({$id: v});
+      const S = new TrieRouterJsonSchema();
+      const throwable = v => () => S.defineSchema({$id: v});
       const error = v =>
         format(
           'Schema must have an "$id" property as a non-empty String, ' +
@@ -423,45 +424,178 @@ describe('TrieRouterJsonSchema', function () {
     });
 
     it('should register the schema in all Ajv instances', function () {
-      const service = new TrieRouterJsonSchema();
+      const S = new TrieRouterJsonSchema();
       const mySchema = {
         $id: 'MyTestSchema',
         type: 'object',
         properties: {foo: {type: 'string'}},
       };
-      service.defineSchema(mySchema);
-      const paramsValidator = service
-        ._getParametersAjvInstance()
-        .getSchema('MyTestSchema');
-      const reqBodyValidator = service
-        ._getRequestBodyAjvInstance()
-        .getSchema('MyTestSchema');
-      const resBodyValidator = service
-        ._getResponseBodyAjvInstance()
-        .getSchema('MyTestSchema');
+      S.defineSchema(mySchema);
+      const paramsValidator =
+        S._getParametersAjvInstance().getSchema('MyTestSchema');
+      const reqBodyValidator =
+        S._getRequestBodyAjvInstance().getSchema('MyTestSchema');
+      const resBodyValidator =
+        S._getResponseBodyAjvInstance().getSchema('MyTestSchema');
       expect(paramsValidator).to.be.a('function');
       expect(reqBodyValidator).to.be.a('function');
       expect(resBodyValidator).to.be.a('function');
     });
 
     it('should return the current instance for chaining', function () {
-      const service = new TrieRouterJsonSchema();
+      const S = new TrieRouterJsonSchema();
       const mySchema = {$id: 'MyChainSchema', type: 'object'};
-      const result = service.defineSchema(mySchema);
-      expect(result).to.be.eq(service);
+      const result = S.defineSchema(mySchema);
+      expect(result).to.be.eq(S);
     });
   });
 
   describe('onDefineRouteJsonSchemaHook', function () {
-    it('should ignore if a route definition lacks the or "jsonSchema" keywords', function () {
+    it('should ignore if the route definition is invalid or lacks the "jsonSchema" keyword', function () {
       const container = new ServiceContainer();
-      const service = container.get(TrieRouterJsonSchema);
+      const S = container.get(TrieRouterJsonSchema);
+      onDefineRouteJsonSchemaHook(undefined, container);
+      onDefineRouteJsonSchemaHook(null, container);
+      onDefineRouteJsonSchemaHook('str', container);
       onDefineRouteJsonSchemaHook({method: 'GET', path: '/'}, container);
       onDefineRouteJsonSchemaHook({meta: {}}, container);
       onDefineRouteJsonSchemaHook({meta: {jsonSchema: false}}, container);
-      expect(service._parametersValidatiors.size).to.be.eq(0);
-      expect(service._requestBodyValidatiors.size).to.be.eq(0);
-      expect(service._responseBodyValidatiors.size).to.be.eq(0);
+      expect(S._parametersValidatiors.size).to.be.eq(0);
+      expect(S._requestBodyValidatiors.size).to.be.eq(0);
+      expect(S._responseBodyValidatiors.size).to.be.eq(0);
+    });
+
+    it('should compile and store parameter validators using the route key', function () {
+      const container = new ServiceContainer();
+      const S = container.get(TrieRouterJsonSchema);
+      const routeDef = {
+        method: 'GET',
+        path: '/test',
+        meta: {
+          jsonSchema: {
+            params: {type: JSONType.OBJECT},
+            query: {type: JSONType.OBJECT},
+            headers: {type: JSONType.OBJECT},
+            cookies: {type: JSONType.OBJECT},
+          },
+        },
+      };
+      onDefineRouteJsonSchemaHook(routeDef, container);
+      const routeKey = 'GET//test';
+      expect(S._parametersValidatiors.size).to.be.eq(1);
+      expect(S._parametersValidatiors.get(routeKey)).to.be.a('function');
+    });
+
+    it('should compile and store the request body validator using the route key', function () {
+      const container = new ServiceContainer();
+      const S = container.get(TrieRouterJsonSchema);
+      const routeDef = {
+        method: 'POST',
+        path: '/submit',
+        meta: {
+          jsonSchema: {
+            body: {type: JSONType.OBJECT},
+          },
+        },
+      };
+      onDefineRouteJsonSchemaHook(routeDef, container);
+      const routeKey = 'POST//submit';
+      expect(S._requestBodyValidatiors.size).to.be.eq(1);
+      expect(S._requestBodyValidatiors.get(routeKey)).to.be.a('function');
+    });
+
+    it('should skip compiling request validators if "noRequestValidation" option is true', function () {
+      const container = new ServiceContainer();
+      const S = new TrieRouterJsonSchema(container, {
+        noRequestValidation: true,
+      });
+      const routeDef = {
+        method: 'POST',
+        path: '/skip-req',
+        meta: {
+          jsonSchema: {
+            params: {type: JSONType.OBJECT},
+            body: {type: JSONType.OBJECT},
+          },
+        },
+      };
+      onDefineRouteJsonSchemaHook(routeDef, container);
+      expect(S._parametersValidatiors.size).to.be.eq(0);
+      expect(S._requestBodyValidatiors.size).to.be.eq(0);
+    });
+
+    it('should require the "response" schema to be a plain Object', function () {
+      const container = new ServiceContainer();
+      new TrieRouterJsonSchema(container);
+      const throwable = v => () => {
+        const routeDef = {
+          method: 'GET',
+          path: '/',
+          meta: {
+            jsonSchema: {
+              response: v,
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+      };
+      const error = v =>
+        format(
+          'The "response" schema definition must be an Object ' +
+            'keyed by status codes, but %s was given.',
+          v,
+        );
+      expect(throwable('str')).to.throw(error('"str"'));
+      expect(throwable(10)).to.throw(error('10'));
+      expect(throwable(true)).to.throw(error('true'));
+      expect(throwable([])).to.throw(error('Array'));
+      expect(throwable(null)).to.throw(error('null'));
+    });
+
+    it('should compile and store response body validators grouped by status codes', function () {
+      const container = new ServiceContainer();
+      const S = container.get(TrieRouterJsonSchema);
+      const routeDef = {
+        method: 'GET',
+        path: '/data',
+        meta: {
+          jsonSchema: {
+            response: {
+              200: {type: JSONType.OBJECT},
+              404: {type: JSONType.STRING},
+              '5xx': {type: JSONType.OBJECT},
+            },
+          },
+        },
+      };
+      onDefineRouteJsonSchemaHook(routeDef, container);
+      const routeKey = 'GET//data';
+      expect(S._responseBodyValidatiors.size).to.be.eq(1);
+      const responseValidatorsMap = S._responseBodyValidatiors.get(routeKey);
+      expect(responseValidatorsMap).to.be.an('object');
+      expect(responseValidatorsMap['200']).to.be.a('function');
+      expect(responseValidatorsMap['404']).to.be.a('function');
+      expect(responseValidatorsMap['5xx']).to.be.a('function');
+    });
+
+    it('should skip compiling response validators if "noResponseValidation" option is true', function () {
+      const container = new ServiceContainer();
+      const S = new TrieRouterJsonSchema(container, {
+        noResponseValidation: true,
+      });
+      const routeDef = {
+        method: 'GET',
+        path: '/skip-res',
+        meta: {
+          jsonSchema: {
+            response: {
+              200: {type: JSONType.OBJECT},
+            },
+          },
+        },
+      };
+      onDefineRouteJsonSchemaHook(routeDef, container);
+      expect(S._responseBodyValidatiors.size).to.be.eq(0);
     });
   });
 });

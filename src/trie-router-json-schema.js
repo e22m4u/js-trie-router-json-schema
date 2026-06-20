@@ -308,7 +308,7 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
   const method = (routeDef.method || '').toUpperCase();
   const path = routeDef.path || '/';
   const routeKey = `${method}/${path}`;
-  // компиляция схем для входящих данных запроса
+  // компиляция схем входящих данных запроса
   if (!options.noRequestValidation) {
     const hasParams = schemaObj.params !== undefined;
     const hasQuery = schemaObj.query !== undefined;
@@ -335,13 +335,13 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
       if (hasCookies) {
         parametersSchema.properties.cookies = schemaObj.cookies;
       }
-      // компиляция схемы для параметров
+      // компиляция схемы параметров
       const validateParams = inst
         ._getParametersAjvInstance()
         .compile(parametersSchema);
       inst._parametersValidatiors.set(routeKey, validateParams);
     }
-    // компиляция схемы для тела запроса
+    // компиляция схемы тела запроса
     if (schemaObj.body !== undefined) {
       // для корректного приведения типа примитивов,
       // схема тела оборачивается в схему объека
@@ -355,7 +355,7 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
       inst._requestBodyValidatiors.set(routeKey, validateRequestBody);
     }
   }
-  // компиляция схем для тела ответа
+  // компиляция схем тела ответа
   if (!options.noResponseValidation && schemaObj.response !== undefined) {
     if (
       schemaObj.response === null ||
