@@ -55,7 +55,7 @@ const router = new TrieRouter();
 router.useService(TrieRouterJsonSchema);
 ```
 
-Определение спецификации для данных запроса и ответа.
+Определение *JSON* схемы для данных запроса и ответа.
 
 ```js
 import {HttpMethod} from '@e22m4u/js-trie-router';
@@ -94,7 +94,7 @@ router.defineRoute({
           authorization: {type: JsonType.STRING},
         },
       },
-      // параметры Cookie заголовка
+      // параметры заголовка Cookie
       cookies: {
         type: JsonType.OBJECT,
         properties: {
