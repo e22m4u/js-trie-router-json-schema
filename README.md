@@ -144,7 +144,7 @@ schemaService.defineSchema({
     },
     population: {
       type: JsonType.NUMBER,
-      default: 0,
+      default: 0, // по умолчанию для undefined и null
     },
   },
   required: ['name'],
