@@ -113,7 +113,9 @@ router.defineRoute({
         properties: {
           name: {type: JsonType.STRING},
           countryId: {type: JsonType.NUMBER},
+          // пример: {"name": "Moscow", "countryId": 1}
         },
+        additionalProperties: false, // исключить неуказанные поля
       },
       // тело ответа
       response: {
