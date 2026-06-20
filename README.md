@@ -116,6 +116,7 @@ router.defineRoute({
           // пример: {"name": "Moscow", "countryId": 1}
         },
         additionalProperties: false, // исключить неуказанные поля
+        // (поля не описанные в схеме будут удалены из контекста запроса)
       },
       // тело ответа
       response: {
