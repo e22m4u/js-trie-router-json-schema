@@ -64,7 +64,7 @@ import {JsonType} from '@e22m4u/js-trie-router-json-schema';
 // определение маршрута
 router.defineRoute({
   method: HttpMethod.POST,
-  path: '/cities/:id',
+  path: '/cities/:id', // путь содержит параметр id
   meta: {
     // спецификация
     jsonSchema: {
@@ -72,7 +72,11 @@ router.defineRoute({
       params: {
         type: JsonType.OBJECT,
         properties: {
-          id: {type: JsonType.NUMBER},
+          id: {
+            type: JsonType.NUMBER,
+            // пример: /cities/10
+            // (значение 10 будет приведено к числу согласно типу)
+          },
         },
         required: ['id'],
       },
@@ -82,7 +86,9 @@ router.defineRoute({
         properties: {
           include: {
             type: JsonType.ARRAY,
-            items: {type: JsonType}
+            items: {type: JsonType.STRING}
+            // пример: ?include=["country"]
+            // (JSON в query параметре будет разобран автоматически)
           },
         }
       },
