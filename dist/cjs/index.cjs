@@ -99,7 +99,7 @@ var TrieRouterJsonSchema = class extends import_js_service.Service {
    *
    * @type {Map<string, Function>}
    */
-  _parametersValidatiors = /* @__PURE__ */ new Map();
+  _parametersValidators = /* @__PURE__ */ new Map();
   /**
    * Request body validators.
    *
@@ -108,7 +108,7 @@ var TrieRouterJsonSchema = class extends import_js_service.Service {
    *
    * @type {Map<string, Function>}
    */
-  _requestBodyValidatiors = /* @__PURE__ */ new Map();
+  _requestBodyValidators = /* @__PURE__ */ new Map();
   /**
    * Response body validators.
    *
@@ -117,7 +117,7 @@ var TrieRouterJsonSchema = class extends import_js_service.Service {
    *
    * @type {Map<string, Function>}
    */
-  _responseBodyValidatiors = /* @__PURE__ */ new Map();
+  _responseBodyValidators = /* @__PURE__ */ new Map();
   /**
    * Parameters ajv.
    *
@@ -358,15 +358,16 @@ function onDefineRouteJsonSchemaHook(routeDef, container) {
         parametersSchema.properties.cookies = schemaObj.cookies;
       }
       const validateParams = inst._getParametersAjvInstance().compile(parametersSchema);
-      inst._parametersValidatiors.set(routeKey, validateParams);
+      inst._parametersValidators.set(routeKey, validateParams);
     }
     if (schemaObj.body !== void 0) {
       const wrappedRequestBodySchema = {
         type: "object",
-        properties: { body: schemaObj.body }
+        properties: { body: schemaObj.body },
+        required: ["body"]
       };
       const validateRequestBody = inst._getRequestBodyAjvInstance().compile(wrappedRequestBodySchema);
-      inst._requestBodyValidatiors.set(routeKey, validateRequestBody);
+      inst._requestBodyValidators.set(routeKey, validateRequestBody);
     }
   }
   if (!options.noResponseValidation && schemaObj.response !== void 0) {
@@ -380,12 +381,13 @@ function onDefineRouteJsonSchemaHook(routeDef, container) {
     for (const [statusCode, schema] of Object.entries(schemaObj.response)) {
       const wrappedResponseSchema = {
         type: "object",
-        properties: { response: schema }
+        properties: { response: schema },
+        required: ["response"]
       };
       responseValidators[statusCode] = inst._getResponseBodyAjvInstance().compile(wrappedResponseSchema);
     }
     if (Object.keys(responseValidators).length > 0) {
-      inst._responseBodyValidatiors.set(routeKey, responseValidators);
+      inst._responseBodyValidators.set(routeKey, responseValidators);
     }
   }
 }
@@ -401,7 +403,7 @@ function requestValidationJsonSchemaHook(ctx) {
     return;
   }
   const routeKey = `${ctx.route.method}/${ctx.route.path}`;
-  const validateParams = inst._parametersValidatiors.get(routeKey);
+  const validateParams = inst._parametersValidators.get(routeKey);
   if (validateParams) {
     const reqParameters = {
       params: ctx.params,
@@ -436,16 +438,11 @@ function requestValidationJsonSchemaHook(ctx) {
       ctx.cookies = reqParameters.cookies;
     }
   }
-  const validateBody = inst._requestBodyValidatiors.get(routeKey);
+  const validateBody = inst._requestBodyValidators.get(routeKey);
   if (validateBody) {
     const bodyWrapper = { body: ctx.body };
     const isValid = validateBody(bodyWrapper);
     if (!isValid) {
-      validateBody.errors.forEach((e) => {
-        if (e.instancePath.startsWith("/body")) {
-          e.instancePath = e.instancePath.replace("/body", "") || "/";
-        }
-      });
       throw createError(
         import_http_errors.default.BadRequest,
         "Request body validation failed.",
@@ -462,7 +459,7 @@ function responseValidationJsonSchemaHook(ctx, data) {
     return;
   }
   if (Buffer.isBuffer(data) || typeof data === "object" && typeof data.pipe === "function") {
-    return data;
+    return;
   }
   const inst = ctx.container.get(TrieRouterJsonSchema);
   const options = inst._options;
@@ -470,7 +467,7 @@ function responseValidationJsonSchemaHook(ctx, data) {
     return;
   }
   const routeKey = `${ctx.route.method}/${ctx.route.path}`;
-  const responseValidators = inst._responseBodyValidatiors.get(routeKey);
+  const responseValidators = inst._responseBodyValidators.get(routeKey);
   if (!responseValidators) {
     return;
   }
@@ -482,11 +479,6 @@ function responseValidationJsonSchemaHook(ctx, data) {
     const wrappedResponse = { response: data };
     const isValid = validateResponse(wrappedResponse);
     if (!isValid) {
-      validateResponse.errors.forEach((e) => {
-        if (e.instancePath.startsWith("/response")) {
-          e.instancePath = e.instancePath.replace("/response", "") || "/";
-        }
-      });
       throw createError(
         import_http_errors.default.InternalServerError,
         "Response body validation failed.",
@@ -505,9 +497,10 @@ function parseJsonParameters(obj) {
   const result = {};
   for (const key of Object.keys(obj)) {
     const val = obj[key];
-    if (typeof val === "string" && (val.startsWith("{") || val.startsWith("["))) {
+    const valStr = typeof val === "string" ? val.trim() : "";
+    if (valStr && (valStr.startsWith("{") && valStr.endsWith("}") || valStr.startsWith("[") && valStr.endsWith("]"))) {
       try {
-        result[key] = JSON.parse(val);
+        result[key] = JSON.parse(valStr);
       } catch {
         result[key] = val;
       }

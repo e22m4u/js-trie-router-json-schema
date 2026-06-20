@@ -22,7 +22,7 @@ export class TrieRouterJsonSchema extends Service {
    *
    * @type {Map<string, Function>}
    */
-  _parametersValidatiors = new Map();
+  _parametersValidators = new Map();
 
   /**
    * Request body validators.
@@ -32,7 +32,7 @@ export class TrieRouterJsonSchema extends Service {
    *
    * @type {Map<string, Function>}
    */
-  _requestBodyValidatiors = new Map();
+  _requestBodyValidators = new Map();
 
   /**
    * Response body validators.
@@ -42,7 +42,7 @@ export class TrieRouterJsonSchema extends Service {
    *
    * @type {Map<string, Function>}
    */
-  _responseBodyValidatiors = new Map();
+  _responseBodyValidators = new Map();
 
   /**
    * Parameters ajv.
@@ -339,7 +339,7 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
       const validateParams = inst
         ._getParametersAjvInstance()
         .compile(parametersSchema);
-      inst._parametersValidatiors.set(routeKey, validateParams);
+      inst._parametersValidators.set(routeKey, validateParams);
     }
     // компиляция схемы тела запроса
     if (schemaObj.body !== undefined) {
@@ -348,11 +348,12 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
       const wrappedRequestBodySchema = {
         type: 'object',
         properties: {body: schemaObj.body},
+        required: ['body'],
       };
       const validateRequestBody = inst
         ._getRequestBodyAjvInstance()
         .compile(wrappedRequestBodySchema);
-      inst._requestBodyValidatiors.set(routeKey, validateRequestBody);
+      inst._requestBodyValidators.set(routeKey, validateRequestBody);
     }
   }
   // компиляция схем тела ответа
@@ -373,13 +374,14 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
       const wrappedResponseSchema = {
         type: 'object',
         properties: {response: schema},
+        required: ['response'],
       };
       responseValidators[statusCode] = inst
         ._getResponseBodyAjvInstance()
         .compile(wrappedResponseSchema);
     }
     if (Object.keys(responseValidators).length > 0) {
-      inst._responseBodyValidatiors.set(routeKey, responseValidators);
+      inst._responseBodyValidators.set(routeKey, responseValidators);
     }
   }
 }
@@ -401,7 +403,7 @@ export function requestValidationJsonSchemaHook(ctx) {
   }
   const routeKey = `${ctx.route.method}/${ctx.route.path}`;
   // валидация параметров (params, query, headers, cookies)
-  const validateParams = inst._parametersValidatiors.get(routeKey);
+  const validateParams = inst._parametersValidators.get(routeKey);
   if (validateParams) {
     const reqParameters = {
       params: ctx.params,
@@ -442,18 +444,11 @@ export function requestValidationJsonSchemaHook(ctx) {
     }
   }
   // валидация тела запроса
-  const validateBody = inst._requestBodyValidatiors.get(routeKey);
+  const validateBody = inst._requestBodyValidators.get(routeKey);
   if (validateBody) {
     const bodyWrapper = {body: ctx.body};
     const isValid = validateBody(bodyWrapper);
     if (!isValid) {
-      // очистка технического префикса "body"
-      // из путей ошибок для красоты
-      validateBody.errors.forEach(e => {
-        if (e.instancePath.startsWith('/body')) {
-          e.instancePath = e.instancePath.replace('/body', '') || '/';
-        }
-      });
       throw createError(
         HttpErrors.BadRequest,
         'Request body validation failed.',
@@ -484,7 +479,7 @@ export function responseValidationJsonSchemaHook(ctx, data) {
     Buffer.isBuffer(data) ||
     (typeof data === 'object' && typeof data.pipe === 'function')
   ) {
-    return data;
+    return;
   }
   const inst = ctx.container.get(TrieRouterJsonSchema);
   const options = inst._options;
@@ -492,7 +487,7 @@ export function responseValidationJsonSchemaHook(ctx, data) {
     return;
   }
   const routeKey = `${ctx.route.method}/${ctx.route.path}`;
-  const responseValidators = inst._responseBodyValidatiors.get(routeKey);
+  const responseValidators = inst._responseBodyValidators.get(routeKey);
   if (!responseValidators) {
     return;
   }
@@ -515,13 +510,6 @@ export function responseValidationJsonSchemaHook(ctx, data) {
     const wrappedResponse = {response: data};
     const isValid = validateResponse(wrappedResponse);
     if (!isValid) {
-      // очистка технического префикса "response"
-      // из путей ошибок для красоты
-      validateResponse.errors.forEach(e => {
-        if (e.instancePath.startsWith('/response')) {
-          e.instancePath = e.instancePath.replace('/response', '') || '/';
-        }
-      });
       throw createError(
         HttpErrors.InternalServerError,
         'Response body validation failed.',
@@ -548,12 +536,14 @@ export function parseJsonParameters(obj) {
   const result = {};
   for (const key of Object.keys(obj)) {
     const val = obj[key];
+    const valStr = typeof val === 'string' ? val.trim() : '';
     if (
-      typeof val === 'string' &&
-      (val.startsWith('{') || val.startsWith('['))
+      valStr &&
+      ((valStr.startsWith('{') && valStr.endsWith('}')) ||
+        (valStr.startsWith('[') && valStr.endsWith(']')))
     ) {
       try {
-        result[key] = JSON.parse(val);
+        result[key] = JSON.parse(valStr);
       } catch {
         result[key] = val;
       }
