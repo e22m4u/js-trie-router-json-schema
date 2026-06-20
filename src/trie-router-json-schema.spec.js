@@ -1455,7 +1455,7 @@ describe('TrieRouterJsonSchema', function () {
         }
       });
 
-      it('should return modified data when type coercion occurs', function () {
+      it('should match the status code pattern in upper case', function () {
         const container = new ServiceContainer();
         container.use(TrieRouterJsonSchema);
         const routeDef = {
@@ -1465,6 +1465,42 @@ describe('TrieRouterJsonSchema', function () {
             jsonSchema: {
               response: {
                 '2XX': {
+                  type: JsonType.OBJECT,
+                  properties: {
+                    active: {type: JsonType.BOOLEAN},
+                  },
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          response: {statusCode: 201},
+        };
+        const invalidData = {active: 'not-a-boolean'};
+        try {
+          responseValidationJsonSchemaHook(ctx, invalidData);
+          throw new Error('Should not be reached');
+        } catch (error) {
+          expect(error).to.be.instanceOf(HttpErrors.InternalServerError);
+          expect(error.message).to.be.eq('Response body validation failed.');
+        }
+      });
+
+      it('should return modified data when type coercion occurs', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              response: {
+                '2xx': {
                   type: JsonType.OBJECT,
                   properties: {
                     active: {type: JsonType.BOOLEAN},
