@@ -118,8 +118,8 @@ router.defineRoute({
         additionalProperties: false, // исключить неуказанные поля
         // (поля не описанные в схеме будут удалены из контекста запроса)
       },
-      // тело ответа
       response: {
+        // тело ответа для статус-кода 200
         200: {
           type: JsonType.OBJECT,
           properties: {
