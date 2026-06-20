@@ -1,4 +1,5 @@
 import {expect} from 'chai';
+import HttpErrors from 'http-errors';
 import {format} from '@e22m4u/js-format';
 import {JsonType} from './json-schema.js';
 import {ServiceContainer} from '@e22m4u/js-service';
@@ -596,6 +597,429 @@ describe('TrieRouterJsonSchema', function () {
       };
       onDefineRouteJsonSchemaHook(routeDef, container);
       expect(S._responseBodyValidatiors.size).to.be.eq(0);
+    });
+  });
+
+  describe('requestValidationJsonSchemaHook', function () {
+    it('should do nothing when the option "meta" is missing', function () {
+      const container = new ServiceContainer();
+      container.use(TrieRouterJsonSchema);
+      const ctx = {
+        container,
+        route: {method: 'GET', path: '/test'},
+        meta: undefined,
+        params: {id: '123'},
+      };
+      requestValidationJsonSchemaHook(ctx);
+      expect(ctx.params.id).to.be.eq('123');
+    });
+
+    it('should do nothing when the keyowrd "jsonSchema" is false', function () {
+      const container = new ServiceContainer();
+      container.use(TrieRouterJsonSchema);
+      const ctx = {
+        container,
+        route: {method: 'GET', path: '/test'},
+        meta: {jsonSchema: false},
+        params: {id: '123'},
+      };
+      requestValidationJsonSchemaHook(ctx);
+      expect(ctx.params.id).to.be.eq('123');
+    });
+
+    it('should do nothing when the option "noRequestValidation" is true', function () {
+      const container = new ServiceContainer();
+      const schemaService = new TrieRouterJsonSchema(container, {
+        noRequestValidation: true,
+      });
+      container.set(TrieRouterJsonSchema, schemaService);
+      const routeDef = {
+        method: 'GET',
+        path: '/test',
+        meta: {
+          jsonSchema: {
+            params: {
+              type: JsonType.OBJECT,
+              properties: {id: {type: JsonType.NUMBER}},
+            },
+          },
+        },
+      };
+      onDefineRouteJsonSchemaHook(routeDef, container);
+      const ctx = {
+        container,
+        route: {method: 'GET', path: '/test'},
+        meta: routeDef.meta,
+        params: {id: 'invalid-number'},
+        query: {},
+        headers: {},
+        cookies: {},
+      };
+      requestValidationJsonSchemaHook(ctx);
+      expect(ctx.params.id).to.be.eq('invalid-number');
+    });
+
+    describe('params', function () {
+      it('should throw BadRequest error when parameters data is invalid', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              params: {
+                type: JsonType.OBJECT,
+                properties: {
+                  id: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {id: 'not-a-number'},
+          query: {},
+          headers: {},
+          cookies: {},
+        };
+        try {
+          requestValidationJsonSchemaHook(ctx);
+          throw new Error('Should not be reached');
+        } catch (error) {
+          expect(error).to.be.instanceOf(HttpErrors.BadRequest);
+          expect(error.message).to.be.eq(
+            'Request parameters validation failed.',
+          );
+        }
+      });
+
+      it('should overwrite a parameters object when type coercion occurs', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              params: {
+                type: JsonType.OBJECT,
+                properties: {
+                  id: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {id: '42'},
+          query: {},
+          headers: {},
+          cookies: {},
+        };
+        requestValidationJsonSchemaHook(ctx);
+        expect(ctx.params.id).to.be.eq(42);
+        expect(typeof ctx.params.id).to.be.eq('number');
+      });
+    });
+
+    describe('query', function () {
+      it('should throw BadRequest error when query data is invalid', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              query: {
+                type: JsonType.OBJECT,
+                properties: {
+                  limit: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {limit: 'not-a-number'},
+          headers: {},
+          cookies: {},
+        };
+        try {
+          requestValidationJsonSchemaHook(ctx);
+          throw new Error('Should not be reached');
+        } catch (error) {
+          expect(error).to.be.instanceOf(HttpErrors.BadRequest);
+          expect(error.message).to.be.eq(
+            'Request parameters validation failed.',
+          );
+        }
+      });
+
+      it('should overwrite a query object when type coercion occurs', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              query: {
+                type: JsonType.OBJECT,
+                properties: {
+                  limit: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {limit: '100'},
+          headers: {},
+          cookies: {},
+        };
+        requestValidationJsonSchemaHook(ctx);
+        expect(ctx.query.limit).to.be.eq(100);
+        expect(typeof ctx.query.limit).to.be.eq('number');
+      });
+    });
+
+    describe('headers', function () {
+      it('should throw BadRequest error when headers data is invalid', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              headers: {
+                type: JsonType.OBJECT,
+                properties: {
+                  'x-custom-id': {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {},
+          headers: {'x-custom-id': 'invalid'},
+          cookies: {},
+        };
+        try {
+          requestValidationJsonSchemaHook(ctx);
+          throw new Error('Should not be reached');
+        } catch (error) {
+          expect(error).to.be.instanceOf(HttpErrors.BadRequest);
+          expect(error.message).to.be.eq(
+            'Request parameters validation failed.',
+          );
+        }
+      });
+
+      it('should overwrite a headers object when type coercion occurs', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              headers: {
+                type: JsonType.OBJECT,
+                properties: {
+                  'x-custom-id': {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {},
+          headers: {'x-custom-id': '99'},
+          cookies: {},
+        };
+        requestValidationJsonSchemaHook(ctx);
+        expect(ctx.headers['x-custom-id']).to.be.eq(99);
+        expect(typeof ctx.headers['x-custom-id']).to.be.eq('number');
+      });
+    });
+
+    describe('cookies', function () {
+      it('should throw BadRequest error when cookies data is invalid', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              cookies: {
+                type: JsonType.OBJECT,
+                properties: {
+                  sessionVersion: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {},
+          headers: {},
+          cookies: {sessionVersion: 'abc'},
+        };
+        try {
+          requestValidationJsonSchemaHook(ctx);
+          throw new Error('Should not be reached');
+        } catch (error) {
+          expect(error).to.be.instanceOf(HttpErrors.BadRequest);
+          expect(error.message).to.be.eq(
+            'Request parameters validation failed.',
+          );
+        }
+      });
+
+      it('should overwrite a cookies object when type coercion occurs', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              cookies: {
+                type: JsonType.OBJECT,
+                properties: {
+                  sessionVersion: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {},
+          headers: {},
+          cookies: {sessionVersion: '2'},
+        };
+        requestValidationJsonSchemaHook(ctx);
+        expect(ctx.cookies.sessionVersion).to.be.eq(2);
+        expect(typeof ctx.cookies.sessionVersion).to.be.eq('number');
+      });
+    });
+
+    describe('body', function () {
+      it('should throw BadRequest error when a request body is invalid', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'POST',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              body: {
+                type: JsonType.OBJECT,
+                properties: {
+                  title: {type: JsonType.STRING},
+                  count: {type: JsonType.NUMBER},
+                },
+                required: ['title', 'count'],
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'POST', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {},
+          headers: {},
+          cookies: {},
+          body: {title: 'Hello', count: 'not-a-number'},
+        };
+        try {
+          requestValidationJsonSchemaHook(ctx);
+          throw new Error('Should not be reached');
+        } catch (error) {
+          expect(error).to.be.instanceOf(HttpErrors.BadRequest);
+          expect(error.message).to.be.eq('Request body validation failed.');
+        }
+      });
+
+      it('should overwrite a request body when type coercion occurs', function () {
+        const container = new ServiceContainer();
+        container.use(TrieRouterJsonSchema);
+        const routeDef = {
+          method: 'POST',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              body: {
+                type: JsonType.OBJECT,
+                properties: {
+                  title: {type: JsonType.STRING},
+                  count: {type: JsonType.NUMBER},
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'POST', path: '/test'},
+          meta: routeDef.meta,
+          params: {},
+          query: {},
+          headers: {},
+          cookies: {},
+          body: {title: 'Hello', count: '10'},
+        };
+        requestValidationJsonSchemaHook(ctx);
+        expect(ctx.body.count).to.be.eq(10);
+        expect(typeof ctx.body.count).to.be.eq('number');
+      });
     });
   });
 });
