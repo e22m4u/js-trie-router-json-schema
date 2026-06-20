@@ -307,9 +307,15 @@ var TrieRouterJsonSchema = class extends import_js_service.Service {
    * @returns {this}
    */
   defineSchema(schema) {
-    if (!schema || typeof schema.$id !== "string") {
+    if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
       throw new import_js_format2.InvalidArgumentError(
-        'Schema must have an "$id" string property, but %v was given.',
+        "Schema must be an Object, but %v was given.",
+        schema
+      );
+    }
+    if (!schema.$id || typeof schema.$id !== "string") {
+      throw new import_js_format2.InvalidArgumentError(
+        'Schema must have an "$id" property as a non-empty String, but %v was given.',
         schema.$id
       );
     }
