@@ -1,16 +1,16 @@
-import {JSONSchema} from './json-schema.js';
+import {JsonSchema} from './json-schema.js';
 import {Service, ServiceContainer} from '@e22m4u/js-service';
 
 /**
  * Route json schema.
  */
 export interface RouteJsonSchema {
-  params?: JSONSchema;
-  query?: JSONSchema;
-  headers?: JSONSchema;
-  cookies?: JSONSchema;
-  body?: JSONSchema;
-  response?: {[statusCode: string]: JSONSchema};
+  params?: JsonSchema;
+  query?: JsonSchema;
+  headers?: JsonSchema;
+  cookies?: JsonSchema;
+  body?: JsonSchema;
+  response?: {[statusCode: string]: JsonSchema};
 }
 
 /**

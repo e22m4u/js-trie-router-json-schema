@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import Ajv2020 from 'ajv/dist/2020.js';
 import {createAjv} from './create-ajv.js';
-import {JSONType} from './json-schema.js';
+import {JsonType} from './json-schema.js';
 
 describe('createAjv', function () {
   it('should return Ajv2020 instance', function () {
@@ -22,7 +22,7 @@ describe('createAjv', function () {
 
   it('should allow union types', function () {
     const validate = createAjv().compile({
-      type: [JSONType.STRING, JSONType.NUMBER],
+      type: [JsonType.STRING, JsonType.NUMBER],
     });
     const res1 = validate('10');
     const res2 = validate(10);
@@ -34,8 +34,8 @@ describe('createAjv', function () {
 
   it('should allow matching properties', function () {
     const validate = createAjv().compile({
-      properties: {foo: {type: JSONType.STRING}},
-      patternProperties: {'^num': {type: JSONType.NUMBER}},
+      properties: {foo: {type: JsonType.STRING}},
+      patternProperties: {'^num': {type: JsonType.NUMBER}},
     });
     const res1 = validate({foo: 'bar', numProp: 10});
     const res2 = validate({foo: 'bar', numProp: '10'});
@@ -52,7 +52,7 @@ describe('createAjv', function () {
   });
 
   it('should validate the data against the schema object', function () {
-    const validate = createAjv().compile({type: JSONType.STRING});
+    const validate = createAjv().compile({type: JsonType.STRING});
     const res1 = validate('10');
     const res2 = validate(10);
     expect(res1).to.be.true;

@@ -31,13 +31,13 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.js
 var index_exports = {};
 __export(index_exports, {
-  JSONType: () => JSONType,
+  JsonType: () => JsonType,
   TrieRouterJsonSchema: () => TrieRouterJsonSchema
 });
 module.exports = __toCommonJS(index_exports);
 
 // src/json-schema.js
-var JSONType = {
+var JsonType = {
   STRING: "string",
   NUMBER: "number",
   INTEGER: "integer",
@@ -520,6 +520,6 @@ function parseJsonParameters(obj) {
 __name(parseJsonParameters, "parseJsonParameters");
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  JSONType,
+  JsonType,
   TrieRouterJsonSchema
 });

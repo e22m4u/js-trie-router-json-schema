@@ -59,7 +59,7 @@ router.useService(TrieRouterJsonSchema);
 
 ```js
 import {HttpMethod} from '@e22m4u/js-trie-router';
-import {JSONType} from '@e22m4u/js-trie-router-json-schema';
+import {JsonType} from '@e22m4u/js-trie-router-json-schema';
 
 // определение маршрута
 router.defineRoute({
@@ -70,48 +70,48 @@ router.defineRoute({
     jsonSchema: {
       // параметры пути
       params: {
-        type: JSONType.OBJECT,
+        type: JsonType.OBJECT,
         properties: {
           // параметр "id" типа "number"
-          id: {type: JSONType.NUMBER},
+          id: {type: JsonType.NUMBER},
         },
         // параметр "id" является обязательным
         required: ['id'],
       },
       // query параметры
       query: {
-        type: JSONType.OBJECT,
+        type: JsonType.OBJECT,
         properties: {
           // параметр "include" типа "array"
           // с элементами типа "string"
           include: {
-            type: JSONType.ARRAY,
-            items: {type: JSONType}
+            type: JsonType.ARRAY,
+            items: {type: JsonType}
           },
         }
       },
       // заголовки запроса
       headers: {
-        type: JSONType.OBJECT,
+        type: JsonType.OBJECT,
         properties: {
           // заголовок "authorization" типа "string"
-          authorization: {type: JSONType.STRING},
+          authorization: {type: JsonType.STRING},
           // заголовки требуется указывать в нижнем регистре
         },
       },
       // параметры Cookie заголовка
       cookies: {
-        type: JSONType.OBJECT,
+        type: JsonType.OBJECT,
         properties: {
           // параметр "accessToken" типа "string"
-          accessToken: {type: JSONType.STRING},
+          accessToken: {type: JsonType.STRING},
         },
       },
       // тело запроса
-      body: {type: JSONType.OBJECT},
+      body: {type: JsonType.OBJECT},
       // тело ответа
       response: {
-        200: {type: JSONType.OBJECT},
+        200: {type: JsonType.OBJECT},
       },
     },
   },
@@ -130,7 +130,7 @@ router.defineRoute({
 
 ```js
 import {HttpMethod} from '@e22m4u/js-trie-router';
-import {JSONType, TrieRouterJsonSchema} from '@e22m4u/js-trie-router-json-schema';
+import {JsonType, TrieRouterJsonSchema} from '@e22m4u/js-trie-router-json-schema';
 
 // извлечение расширения
 const schemaService = router.getService(TrieRouterJsonSchema);
@@ -138,18 +138,18 @@ const schemaService = router.getService(TrieRouterJsonSchema);
 // определение именованной схемы
 schemaService.defineSchema({
   $id: 'city',
-  type: JSONType.OBJECT,
+  type: JsonType.OBJECT,
   properties: {
     id: {
-      type: JSONType.STRING,
+      type: JsonType.STRING,
       format: 'uuid',
     },
     name: {
-      type: JSONType.STRING,
+      type: JsonType.STRING,
       example: 'Moscow',
     },
     population: {
-      type: JSONType.NUMBER,
+      type: JsonType.NUMBER,
       default: 0,
     },
   },

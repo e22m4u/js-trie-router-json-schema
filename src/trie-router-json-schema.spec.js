@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {format} from '@e22m4u/js-format';
-import {JSONType} from './json-schema.js';
+import {JsonType} from './json-schema.js';
 import {ServiceContainer} from '@e22m4u/js-service';
 import {RouterHookRegistry, RouterHookType} from '@e22m4u/js-trie-router';
 
@@ -473,10 +473,10 @@ describe('TrieRouterJsonSchema', function () {
         path: '/test',
         meta: {
           jsonSchema: {
-            params: {type: JSONType.OBJECT},
-            query: {type: JSONType.OBJECT},
-            headers: {type: JSONType.OBJECT},
-            cookies: {type: JSONType.OBJECT},
+            params: {type: JsonType.OBJECT},
+            query: {type: JsonType.OBJECT},
+            headers: {type: JsonType.OBJECT},
+            cookies: {type: JsonType.OBJECT},
           },
         },
       };
@@ -494,7 +494,7 @@ describe('TrieRouterJsonSchema', function () {
         path: '/submit',
         meta: {
           jsonSchema: {
-            body: {type: JSONType.OBJECT},
+            body: {type: JsonType.OBJECT},
           },
         },
       };
@@ -514,8 +514,8 @@ describe('TrieRouterJsonSchema', function () {
         path: '/skip-req',
         meta: {
           jsonSchema: {
-            params: {type: JSONType.OBJECT},
-            body: {type: JSONType.OBJECT},
+            params: {type: JsonType.OBJECT},
+            body: {type: JsonType.OBJECT},
           },
         },
       };
@@ -561,9 +561,9 @@ describe('TrieRouterJsonSchema', function () {
         meta: {
           jsonSchema: {
             response: {
-              200: {type: JSONType.OBJECT},
-              404: {type: JSONType.STRING},
-              '5xx': {type: JSONType.OBJECT},
+              200: {type: JsonType.OBJECT},
+              404: {type: JsonType.STRING},
+              '5xx': {type: JsonType.OBJECT},
             },
           },
         },
@@ -589,7 +589,7 @@ describe('TrieRouterJsonSchema', function () {
         meta: {
           jsonSchema: {
             response: {
-              200: {type: JSONType.OBJECT},
+              200: {type: JsonType.OBJECT},
             },
           },
         },

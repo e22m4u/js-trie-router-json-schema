@@ -2,7 +2,7 @@
  * JSON type.
  * https://json-schema.org/draft/2020-12/json-schema-core#section-4.2.1
  */
-export declare const JSONType: {
+export declare const JsonType: {
   STRING: 'string';
   NUMBER: 'number';
   INTEGER: 'integer';
@@ -12,20 +12,20 @@ export declare const JSONType: {
   NULL: 'null';
 };
 
-export type JSONType = (typeof JSONType)[keyof typeof JSONType];
+export type JsonType = (typeof JsonType)[keyof typeof JsonType];
 
 /**
  * JSON Schema Document.
  * A JSON Schema MUST be an object or a boolean.
  * https://json-schema.org/draft/2020-12/json-schema-core#section-4.3
  */
-export type JSONSchema = JSONSchemaObject | boolean;
+export type JsonSchema = JsonSchemaObject | boolean;
 
 /**
  * JSON Schema Object.
  * Represents the structured definition of JSON Schema Draft 2020-12.
  */
-export type JSONSchemaObject = {
+export type JsonSchemaObject = {
   // -------------------------------------------------------------------
   // Core Vocabulary
   // https://json-schema.org/draft/2020-12/json-schema-core#section-8
@@ -38,7 +38,7 @@ export type JSONSchemaObject = {
   $dynamicAnchor?: string;
   $vocabulary?: {[uri: string]: boolean};
   $comment?: string;
-  $defs?: {[key: string]: JSONSchema};
+  $defs?: {[key: string]: JsonSchema};
 
   // -------------------------------------------------------------------
   // Applicator Vocabulary (Applying Subschemas)
@@ -46,38 +46,38 @@ export type JSONSchemaObject = {
   // -------------------------------------------------------------------
 
   // Logic
-  allOf?: JSONSchema[];
-  anyOf?: JSONSchema[];
-  oneOf?: JSONSchema[];
-  not?: JSONSchema;
+  allOf?: JsonSchema[];
+  anyOf?: JsonSchema[];
+  oneOf?: JsonSchema[];
+  not?: JsonSchema;
 
   // Conditional
-  if?: JSONSchema;
-  then?: JSONSchema;
-  else?: JSONSchema;
-  dependentSchemas?: {[key: string]: JSONSchema};
+  if?: JsonSchema;
+  then?: JsonSchema;
+  else?: JsonSchema;
+  dependentSchemas?: {[key: string]: JsonSchema};
 
   // Arrays
-  prefixItems?: JSONSchema[];
+  prefixItems?: JsonSchema[];
   /**
    * В Draft 2020-12 `items` больше не принимает массив схем.
    * Массив схем теперь обрабатывается через `prefixItems`.
    */
-  items?: JSONSchema;
-  contains?: JSONSchema;
+  items?: JsonSchema;
+  contains?: JsonSchema;
 
   // Objects
-  properties?: {[name: string]: JSONSchema};
-  patternProperties?: {[pattern: string]: JSONSchema};
-  additionalProperties?: JSONSchema;
-  propertyNames?: JSONSchema;
+  properties?: {[name: string]: JsonSchema};
+  patternProperties?: {[pattern: string]: JsonSchema};
+  additionalProperties?: JsonSchema;
+  propertyNames?: JsonSchema;
 
   // -------------------------------------------------------------------
   // Unevaluated Locations Vocabulary
   // https://json-schema.org/draft/2020-12/json-schema-core#section-11
   // -------------------------------------------------------------------
-  unevaluatedItems?: JSONSchema;
-  unevaluatedProperties?: JSONSchema;
+  unevaluatedItems?: JsonSchema;
+  unevaluatedProperties?: JsonSchema;
 
   // -------------------------------------------------------------------
   // Validation Vocabulary
@@ -85,7 +85,7 @@ export type JSONSchemaObject = {
   // -------------------------------------------------------------------
 
   // Any Type
-  type?: JSONType | JSONType[];
+  type?: JsonType | JsonType[];
   enum?: unknown[];
   const?: unknown;
 
@@ -135,7 +135,7 @@ export type JSONSchemaObject = {
   // -------------------------------------------------------------------
   contentMediaType?: string;
   contentEncoding?: string;
-  contentSchema?: JSONSchema;
+  contentSchema?: JsonSchema;
 
   // -------------------------------------------------------------------
   // Extensibility
