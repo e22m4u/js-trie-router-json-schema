@@ -108,10 +108,22 @@ router.defineRoute({
         },
       },
       // тело запроса
-      body: {type: JsonType.OBJECT},
+      body: {
+        type: JsonType.OBJECT,
+        properties: {
+          name: {type: JsonType.STRING},
+          countryId: {type: JsonType.NUMBER},
+        },
+      },
       // тело ответа
       response: {
-        200: {type: JsonType.OBJECT},
+        200: {
+          type: JsonType.OBJECT,
+          properties: {
+            name: {type: JsonType.STRING},
+            country: {type: JsonType.OBJECT},
+          },
+        },
       },
     },
   },
