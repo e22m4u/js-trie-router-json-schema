@@ -120,7 +120,7 @@ router.defineRoute({
 });
 ```
 
-Использование зарегистрированных схем.
+Использование зарегистрированной схемы (ключ `$ref`).
 
 ```js
 import {HttpMethod} from '@e22m4u/js-trie-router';
@@ -129,7 +129,7 @@ import {JsonType, TrieRouterJsonSchema} from '@e22m4u/js-trie-router-json-schema
 // извлечение расширения
 const schemaService = router.getService(TrieRouterJsonSchema);
 
-// определение именованной схемы
+// регистрация именованной схемы
 schemaService.defineSchema({
   $id: 'city',
   type: JsonType.OBJECT,
