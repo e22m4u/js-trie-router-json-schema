@@ -614,6 +614,19 @@ describe('TrieRouterJsonSchema', function () {
       expect(ctx.params.id).to.be.eq('123');
     });
 
+    it('should do nothing when the keyowrd "jsonSchema" is missing', function () {
+      const container = new ServiceContainer();
+      container.use(TrieRouterJsonSchema);
+      const ctx = {
+        container,
+        route: {method: 'GET', path: '/test'},
+        meta: {},
+        params: {id: '123'},
+      };
+      requestValidationJsonSchemaHook(ctx);
+      expect(ctx.params.id).to.be.eq('123');
+    });
+
     it('should do nothing when the keyowrd "jsonSchema" is false', function () {
       const container = new ServiceContainer();
       container.use(TrieRouterJsonSchema);
