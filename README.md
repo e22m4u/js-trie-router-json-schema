@@ -72,18 +72,14 @@ router.defineRoute({
       params: {
         type: JsonType.OBJECT,
         properties: {
-          // параметр "id" типа "number"
           id: {type: JsonType.NUMBER},
         },
-        // параметр "id" является обязательным
         required: ['id'],
       },
       // query параметры
       query: {
         type: JsonType.OBJECT,
         properties: {
-          // параметр "include" типа "array"
-          // с элементами типа "string"
           include: {
             type: JsonType.ARRAY,
             items: {type: JsonType}
@@ -94,16 +90,14 @@ router.defineRoute({
       headers: {
         type: JsonType.OBJECT,
         properties: {
-          // заголовок "authorization" типа "string"
+          // (!) заголовки требуется указывать в нижнем регистре
           authorization: {type: JsonType.STRING},
-          // заголовки требуется указывать в нижнем регистре
         },
       },
       // параметры Cookie заголовка
       cookies: {
         type: JsonType.OBJECT,
         properties: {
-          // параметр "accessToken" типа "string"
           accessToken: {type: JsonType.STRING},
         },
       },
