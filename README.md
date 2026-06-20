@@ -146,7 +146,7 @@ schemaService.defineSchema({
     },
     name: {
       type: JsonType.STRING,
-      example: 'Moscow',
+      example: ['Moscow'],
     },
     population: {
       type: JsonType.NUMBER,
