@@ -412,10 +412,22 @@ function requestValidationJsonSchemaHook(ctx) {
       cookies: ctx.cookies
     };
     if (!options.noParseParametersJson) {
-      reqParameters.params = parseJsonParameters(reqParameters.params);
-      reqParameters.query = parseJsonParameters(reqParameters.query);
-      reqParameters.headers = parseJsonParameters(reqParameters.headers);
-      reqParameters.cookies = parseJsonParameters(reqParameters.cookies);
+      reqParameters.params = parseJsonParameters(
+        reqParameters.params,
+        schemaObject.params
+      );
+      reqParameters.query = parseJsonParameters(
+        reqParameters.query,
+        schemaObject.query
+      );
+      reqParameters.headers = parseJsonParameters(
+        reqParameters.headers,
+        schemaObject.headers
+      );
+      reqParameters.cookies = parseJsonParameters(
+        reqParameters.cookies,
+        schemaObject.cookies
+      );
     }
     const isValid = validateParams(reqParameters);
     if (!isValid) {
@@ -490,15 +502,24 @@ function responseValidationJsonSchemaHook(ctx, data) {
   return;
 }
 __name(responseValidationJsonSchemaHook, "responseValidationJsonSchemaHook");
-function parseJsonParameters(obj) {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-    return obj;
+function parseJsonParameters(params, schema) {
+  if (!params || typeof params !== "object" || Array.isArray(params)) {
+    return params;
   }
   const result = {};
-  for (const key of Object.keys(obj)) {
-    const val = obj[key];
+  const properties = schema && typeof schema === "object" && !Array.isArray(schema) && schema.properties && typeof schema.properties === "object" && !Array.isArray(schema.properties) && schema.properties || void 0;
+  for (const key of Object.keys(params)) {
+    const val = params[key];
     const valStr = typeof val === "string" ? val.trim() : "";
-    if (valStr && (valStr.startsWith("{") && valStr.endsWith("}") || valStr.startsWith("[") && valStr.endsWith("]"))) {
+    const propSchema = properties && properties[key] || void 0;
+    let expectsObject = false;
+    let expectsArray = false;
+    if (propSchema && typeof propSchema === "object" && !Array.isArray(propSchema) && propSchema.type) {
+      const types = Array.isArray(propSchema.type) ? propSchema.type : [propSchema.type];
+      expectsObject = types.includes(JsonType.OBJECT);
+      expectsArray = types.includes(JsonType.ARRAY);
+    }
+    if (valStr && (expectsObject && valStr.startsWith("{") && valStr.endsWith("}") || expectsArray && valStr.startsWith("[") && valStr.endsWith("]"))) {
       try {
         result[key] = JSON.parse(valStr);
       } catch {

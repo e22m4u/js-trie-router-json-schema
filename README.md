@@ -190,6 +190,56 @@ router.defineRoute({
 });
 ```
 
+### Парсинг JSON в параметрах
+
+Модуль поддерживает автоматический парсинг *JSON*-строк, передаваемых
+в параметрах пути, строке запроса (*query*), заголовках и параметрах *Cookie*.
+Данный функционал позволяет передавать структуры данных без необходимости
+ручного парсинга внутри обработчиков маршрута.
+
+Парсинг работает на основе типов, указанных в *JSON*-схеме. Если для конкретного
+параметра задан тип `object` или `array`, то выполняется попытка преобразовать
+входящую строку в соответствующую структуру. В случае передачи невалидного
+*JSON* строка остается в исходном виде и затем проверяется валидатором,
+который сгенерирует ошибку из-за несовпадения типа.
+
+Пример схемы, ожидающей объект в параметре `filter` и массив в параметре `tags`.
+
+```js
+import {HttpMethod} from '@e22m4u/js-trie-router';
+import {JsonType} from '@e22m4u/js-trie-router-json-schema';
+
+router.defineRoute({
+  method: HttpMethod.GET,
+  path: '/items',
+  meta: {
+    jsonSchema: {
+      query: {
+        type: JsonType.OBJECT,
+        properties: {
+          filter: {
+            type: JsonType.OBJECT,
+            properties: {
+              active: {type: JsonType.BOOLEAN}
+            }
+          },
+          tags: {
+            type: JsonType.ARRAY,
+            items: {type: JsonType.STRING}
+          }
+        }
+      }
+    }
+  },
+  handler: (ctx) => {
+    // входящий запрос: /items?filter={"active":true}&tags=["news","updates"]
+    // значения будут преобразованы автоматически
+    console.log(ctx.query.filter); // {active: true}
+    console.log(ctx.query.tags);   // ['news', 'updates']
+  }
+});
+```
+
 ## Настройки
 
 При подключении данного расширения вторым аргументом можно определить

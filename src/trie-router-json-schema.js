@@ -1,4 +1,5 @@
 import HttpErrors from 'http-errors';
+import {JsonType} from './json-schema.js';
 import {createAjv} from './create-ajv.js';
 import {Service} from '@e22m4u/js-service';
 import {createError} from './utils/create-error.js';
@@ -414,10 +415,22 @@ export function requestValidationJsonSchemaHook(ctx) {
     // парсинг строковых значений,
     // похожих на массивы или объекты
     if (!options.noParseParametersJson) {
-      reqParameters.params = parseJsonParameters(reqParameters.params);
-      reqParameters.query = parseJsonParameters(reqParameters.query);
-      reqParameters.headers = parseJsonParameters(reqParameters.headers);
-      reqParameters.cookies = parseJsonParameters(reqParameters.cookies);
+      reqParameters.params = parseJsonParameters(
+        reqParameters.params,
+        schemaObject.params,
+      );
+      reqParameters.query = parseJsonParameters(
+        reqParameters.query,
+        schemaObject.query,
+      );
+      reqParameters.headers = parseJsonParameters(
+        reqParameters.headers,
+        schemaObject.headers,
+      );
+      reqParameters.cookies = parseJsonParameters(
+        reqParameters.cookies,
+        schemaObject.cookies,
+      );
     }
     const isValid = validateParams(reqParameters);
     if (!isValid) {
@@ -524,23 +537,56 @@ export function responseValidationJsonSchemaHook(ctx, data) {
 }
 
 /**
- * Parse JSON parameters.
+ * Parse JSON parameters based on JSON Schema types.
  *
- * @param {object|undefined} obj
+ * @param {object|undefined} params
+ * @param {object|undefined} schema
  * @returns {object|undefined}
  */
-export function parseJsonParameters(obj) {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    return obj;
+export function parseJsonParameters(params, schema) {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    return params;
   }
   const result = {};
-  for (const key of Object.keys(obj)) {
-    const val = obj[key];
+  // извелчение объекта "properties" из схемы
+  // (если присутствует)
+  const properties =
+    (schema &&
+      typeof schema === 'object' &&
+      !Array.isArray(schema) &&
+      schema.properties &&
+      typeof schema.properties === 'object' &&
+      !Array.isArray(schema.properties) &&
+      schema.properties) ||
+    undefined;
+  for (const key of Object.keys(params)) {
+    const val = params[key];
     const valStr = typeof val === 'string' ? val.trim() : '';
+    // если объект "properties" определен, то выполняется
+    // извлечение схемы конкретного свойства
+    const propSchema = (properties && properties[key]) || undefined;
+    let expectsObject = false;
+    let expectsArray = false;
+    // если схема для поля найдена,
+    // то проверяются разрешенные типы
+    if (
+      propSchema &&
+      typeof propSchema === 'object' &&
+      !Array.isArray(propSchema) &&
+      propSchema.type
+    ) {
+      const types = Array.isArray(propSchema.type)
+        ? propSchema.type
+        : [propSchema.type];
+      expectsObject = types.includes(JsonType.OBJECT);
+      expectsArray = types.includes(JsonType.ARRAY);
+    }
+    // парсинг выполняется только если схема
+    // явно ожидает тип "object" или "array"
     if (
       valStr &&
-      ((valStr.startsWith('{') && valStr.endsWith('}')) ||
-        (valStr.startsWith('[') && valStr.endsWith(']')))
+      ((expectsObject && valStr.startsWith('{') && valStr.endsWith('}')) ||
+        (expectsArray && valStr.startsWith('[') && valStr.endsWith(']')))
     ) {
       try {
         result[key] = JSON.parse(valStr);

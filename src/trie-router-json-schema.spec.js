@@ -1597,90 +1597,148 @@ describe('TrieRouterJsonSchema', function () {
   });
 
   describe('parseJsonParameters', function () {
-    it('should return the input as is when it is not a plain object', function () {
-      expect(parseJsonParameters('str')).to.be.eq('str');
-      expect(parseJsonParameters(123)).to.be.eq(123);
-      expect(parseJsonParameters(true)).to.be.true;
-      expect(parseJsonParameters(null)).to.be.null;
-      expect(parseJsonParameters(undefined)).to.be.undefined;
-      const arr = [1, 2, 3];
-      expect(parseJsonParameters(arr)).to.be.eq(arr);
+    it('should return the original value if "params" is a string', function () {
+      const result = parseJsonParameters('string', {});
+      expect(result).to.be.eq('string');
     });
 
-    it('should return an empty object when the input is an empty object', function () {
-      const result = parseJsonParameters({});
-      expect(result).to.be.eql({});
+    it('should return the original value if "params" is a number', function () {
+      const result = parseJsonParameters(123, {});
+      expect(result).to.be.eq(123);
     });
 
-    it('should keep non-string properties as is', function () {
-      const input = {
-        num: 42,
-        bool: false,
-        nestedObj: {foo: 'bar'},
-        arr: [1, 2, 3],
-      };
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql(input);
+    it('should return the original value if "params" is an array', function () {
+      const params = [1, 2, 3];
+      const result = parseJsonParameters(params, {});
+      expect(result).to.be.eq(params);
     });
 
-    it('should bypass JSON parsing for strings missing trailing braces or brackets', function () {
-      const input = {
-        missingBrace: '{"foo": "bar"',
-        missingBracket: '["apple", "banana"',
-        wrongEndChar: '{"foo": "bar"} suffix',
-      };
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql(input);
+    it('should return the original value if "params" is undefined', function () {
+      const result = parseJsonParameters(undefined, {});
+      expect(result).to.be.undefined;
     });
 
-    it('should parse valid JSON object strings', function () {
-      const input = {data: '{"foo":"bar","count":10}'};
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql({data: {foo: 'bar', count: 10}});
+    it('should return the original value if "params" is null', function () {
+      const result = parseJsonParameters(null, {});
+      expect(result).to.be.null;
     });
 
-    it('should parse valid JSON array strings', function () {
-      const input = {items: '["apple","banana",42]'};
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql({items: ['apple', 'banana', 42]});
+    it('should return a new object with original values if "schema" is undefined', function () {
+      const params = {foo: '{"bar": 1}'};
+      const result = parseJsonParameters(params, undefined);
+      expect(result).to.be.eql(params);
+      expect(result).to.be.not.eq(params);
     });
 
-    it('should parse valid JSON strings that have trailing or leading whitespaces', function () {
-      const input = {withSpace: '{"foo":"bar"} ', withNewLine: '["apple"]\n'};
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql({
-        withSpace: {foo: 'bar'},
-        withNewLine: ['apple'],
+    it('should return original values if "schema" lacks the "properties" object', function () {
+      const params = {foo: '{"bar": 1}'};
+      const schema = {type: JsonType.OBJECT};
+      const result = parseJsonParameters(params, schema);
+      expect(result).to.be.eql(params);
+    });
+
+    describe('parsing objects', function () {
+      it('should parse a valid JSON string into an object when schema expects an object', function () {
+        const params = {filter: '{"active": true}'};
+        const schema = {properties: {filter: {type: JsonType.OBJECT}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.filter).to.be.an('object');
+        expect(result.filter).to.be.eql({active: true});
+      });
+
+      it('should fallback to the original string if JSON string is invalid', function () {
+        const params = {filter: '{active: true}'}; // нет кавычек у ключа
+        const schema = {properties: {filter: {type: JsonType.OBJECT}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.filter).to.be.eq('{active: true}');
+      });
+
+      it('should not parse if a string looks like an array but the schema expects an object', function () {
+        const params = {filter: '[1, 2, 3]'};
+        const schema = {properties: {filter: {type: JsonType.OBJECT}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.filter).to.be.eq('[1, 2, 3]');
       });
     });
 
-    it('should keep invalid JSON object strings as is (catch parsing errors)', function () {
-      const input = {data: '{foo:"bar"}'};
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql(input);
+    describe('parsing arrays', function () {
+      it('should parse a valid JSON string into an array when the schema expects an array', function () {
+        const params = {tags: '["news", "updates"]'};
+        const schema = {properties: {tags: {type: JsonType.ARRAY}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.tags).to.be.an('array');
+        expect(result.tags).to.be.eql(['news', 'updates']);
+      });
+
+      it('should fallback to the original string if JSON array is invalid', function () {
+        const params = {tags: '["news", "updates"'}; // нет закрывающей скобки
+        const schema = {properties: {tags: {type: JsonType.ARRAY}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.tags).to.be.eq('["news", "updates"');
+      });
+
+      it('should not parse if a string looks like an object but the schema expects an array', function () {
+        const params = {tags: '{"news": true}'};
+        const schema = {properties: {tags: {type: JsonType.ARRAY}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.tags).to.be.eq('{"news": true}');
+      });
     });
 
-    it('should keep invalid JSON array strings as is (catch parsing errors)', function () {
-      const input = {items: '[1, 2, 3,]'};
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql(input);
-    });
+    describe('edge cases and specific behaviors', function () {
+      it('should correctly parse strings that have trailing or leading whitespaces', function () {
+        const params = {data: '  {"key": "value"}  '};
+        const schema = {properties: {data: {type: JsonType.OBJECT}}};
+        const result = parseJsonParameters(params, schema);
+        expect(result.data).to.be.eql({key: 'value'});
+      });
 
-    it('should correctly process a mix of various types and JSON strings', function () {
-      const input = {
-        validObj: '{"active":true}',
-        validArr: '[1,2,3]',
-        invalidObj: '{bad: json}',
-        normalString: 'just a string',
-        numberVal: 99,
-      };
-      const result = parseJsonParameters(input);
-      expect(result).to.be.eql({
-        validObj: {active: true},
-        validArr: [1, 2, 3],
-        invalidObj: '{bad: json}',
-        normalString: 'just a string',
-        numberVal: 99,
+      it('should support schema types defined as an array of strings', function () {
+        const params = {data: '{"key": "value"}'};
+        const schema = {
+          properties: {
+            data: {
+              type: [JsonType.STRING, JsonType.OBJECT],
+            },
+          },
+        };
+        const result = parseJsonParameters(params, schema);
+        expect(result.data).to.be.eql({key: 'value'});
+      });
+
+      it('should pass non-string values through without modifying them', function () {
+        const params = {
+          num: 42,
+          bool: true,
+          alreadyObj: {foo: 'bar'},
+        };
+        const schema = {
+          properties: {
+            num: {type: JsonType.NUMBER},
+            bool: {type: JsonType.BOOLEAN},
+            alreadyObj: {type: JsonType.OBJECT},
+          },
+        };
+        const result = parseJsonParameters(params, schema);
+        expect(result.num).to.be.eq(42);
+        expect(result.bool).to.be.true;
+        expect(result.alreadyObj).to.be.eql({foo: 'bar'});
+      });
+
+      it('should only parse fields defined in the schema and leave others intact', function () {
+        const params = {
+          parsedField: '{"a": 1}',
+          unparsedField: '{"b": 2}',
+        };
+        const schema = {
+          properties: {
+            parsedField: {type: JsonType.OBJECT},
+            // unparsedField отсутствует в схеме
+          },
+        };
+        const result = parseJsonParameters(params, schema);
+        expect(result.parsedField).to.be.eql({a: 1});
+        expect(result.unparsedField).to.be.eq('{"b": 2}');
       });
     });
   });
