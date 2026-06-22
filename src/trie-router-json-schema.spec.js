@@ -1597,40 +1597,40 @@ describe('TrieRouterJsonSchema', function () {
   });
 
   describe('parseJsonParameters', function () {
-    it('should return the original value if "params" is a string', function () {
+    it('should return the original value when "params" is a string', function () {
       const result = parseJsonParameters('string', {});
       expect(result).to.be.eq('string');
     });
 
-    it('should return the original value if "params" is a number', function () {
+    it('should return the original value when "params" is a number', function () {
       const result = parseJsonParameters(123, {});
       expect(result).to.be.eq(123);
     });
 
-    it('should return the original value if "params" is an array', function () {
+    it('should return the original value when "params" is an array', function () {
       const params = [1, 2, 3];
       const result = parseJsonParameters(params, {});
       expect(result).to.be.eq(params);
     });
 
-    it('should return the original value if "params" is undefined', function () {
+    it('should return the original value when "params" is undefined', function () {
       const result = parseJsonParameters(undefined, {});
       expect(result).to.be.undefined;
     });
 
-    it('should return the original value if "params" is null', function () {
+    it('should return the original value when "params" is null', function () {
       const result = parseJsonParameters(null, {});
       expect(result).to.be.null;
     });
 
-    it('should return a new object with original values if "schema" is undefined', function () {
+    it('should return a new object with original values when "schema" is undefined', function () {
       const params = {foo: '{"bar": 1}'};
       const result = parseJsonParameters(params, undefined);
       expect(result).to.be.eql(params);
       expect(result).to.be.not.eq(params);
     });
 
-    it('should return original values if "schema" lacks the "properties" object', function () {
+    it('should return original values when "schema" lacks the "properties" object', function () {
       const params = {foo: '{"bar": 1}'};
       const schema = {type: JsonType.OBJECT};
       const result = parseJsonParameters(params, schema);
@@ -1646,14 +1646,14 @@ describe('TrieRouterJsonSchema', function () {
         expect(result.filter).to.be.eql({active: true});
       });
 
-      it('should fallback to the original string if JSON string is invalid', function () {
+      it('should fallback to the original string when JSON string is invalid', function () {
         const params = {filter: '{active: true}'}; // нет кавычек у ключа
         const schema = {properties: {filter: {type: JsonType.OBJECT}}};
         const result = parseJsonParameters(params, schema);
         expect(result.filter).to.be.eq('{active: true}');
       });
 
-      it('should not parse if a string looks like an array but the schema expects an object', function () {
+      it('should not parse when a string looks like an array but the schema expects an object', function () {
         const params = {filter: '[1, 2, 3]'};
         const schema = {properties: {filter: {type: JsonType.OBJECT}}};
         const result = parseJsonParameters(params, schema);
@@ -1670,14 +1670,14 @@ describe('TrieRouterJsonSchema', function () {
         expect(result.tags).to.be.eql(['news', 'updates']);
       });
 
-      it('should fallback to the original string if JSON array is invalid', function () {
+      it('should fallback to the original string when JSON array is invalid', function () {
         const params = {tags: '["news", "updates"'}; // нет закрывающей скобки
         const schema = {properties: {tags: {type: JsonType.ARRAY}}};
         const result = parseJsonParameters(params, schema);
         expect(result.tags).to.be.eq('["news", "updates"');
       });
 
-      it('should not parse if a string looks like an object but the schema expects an array', function () {
+      it('should not parse when a string looks like an object but the schema expects an array', function () {
         const params = {tags: '{"news": true}'};
         const schema = {properties: {tags: {type: JsonType.ARRAY}}};
         const result = parseJsonParameters(params, schema);
