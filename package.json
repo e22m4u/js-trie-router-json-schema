@@ -5,9 +5,9 @@
   "author": "Mikhail Evstropov <e22m4u@yandex.ru>",
   "license": "MIT",
   "keywords": [
-    "validation",
+    "js-trie-router",
     "json-schema",
-    "js-trie-router"
+    "validation"
   ],
   "homepage": "https://gitverse.ru/e22m4u/js-trie-router-json-schema",
   "repository": {
