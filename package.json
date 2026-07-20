@@ -9,10 +9,10 @@
     "json-schema",
     "validation"
   ],
-  "homepage": "https://gitverse.ru/e22m4u/js-trie-router-json-schema",
+  "homepage": "https://github.com/e22m4u/js-trie-router-json-schema",
   "repository": {
     "type": "git",
-    "url": "git+https://gitverse.ru/e22m4u/js-trie-router-json-schema.git"
+    "url": "git+https://github.com/e22m4u/js-trie-router-json-schema.git"
   },
   "type": "module",
   "types": "./src/index.d.ts",
