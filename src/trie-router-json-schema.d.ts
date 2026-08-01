@@ -10,7 +10,7 @@ export interface RouteJsonSchema {
   headers?: JsonSchema;
   cookies?: JsonSchema;
   body?: JsonSchema;
-  response?: {[statusCode: string]: JsonSchema};
+  responses?: {[statusCode: string]: JsonSchema};
 }
 
 /**

@@ -358,20 +358,20 @@ export function onDefineRouteJsonSchemaHook(routeDef, container) {
     }
   }
   // компиляция схем тела ответа
-  if (!options.noResponseValidation && schemaObj.response !== undefined) {
+  if (!options.noResponseValidation && schemaObj.responses !== undefined) {
     if (
-      schemaObj.response === null ||
-      typeof schemaObj.response !== 'object' ||
-      Array.isArray(schemaObj.response)
+      schemaObj.responses === null ||
+      typeof schemaObj.responses !== 'object' ||
+      Array.isArray(schemaObj.responses)
     ) {
       throw new InvalidArgumentError(
-        'The "response" schema definition must be an Object ' +
+        'The "responses" schema definition must be an Object ' +
           'keyed by status codes, but %v was given.',
-        schemaObj.response,
+        schemaObj.responses,
       );
     }
     const responseValidators = {};
-    for (const [statusCode, schema] of Object.entries(schemaObj.response)) {
+    for (const [statusCode, schema] of Object.entries(schemaObj.responses)) {
       const wrappedResponseSchema = {
         type: 'object',
         properties: {response: schema},

@@ -119,7 +119,7 @@ router.defineRoute({
         additionalProperties: false, // исключить неуказанные поля
         // (поля не описанные в схеме будут удалены из контекста запроса)
       },
-      response: {
+      responses: {
         // тело ответа для статус-кода 200
         200: {
           type: JsonType.OBJECT,
@@ -180,7 +180,7 @@ router.defineRoute({
   meta: {
     jsonSchema: {
       body: {$ref: 'city'},  // ссылка на схему
-      response: {
+      responses: {
         200: {$ref: 'city'}, // ссылка на схему
       },
     },

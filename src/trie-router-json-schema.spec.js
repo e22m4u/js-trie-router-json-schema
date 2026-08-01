@@ -527,7 +527,7 @@ describe('TrieRouterJsonSchema', function () {
       expect(S._requestBodyValidators.size).to.be.eq(0);
     });
 
-    it('should require the "response" schema to be a plain Object', function () {
+    it('should require the "responses" schema to be a plain Object', function () {
       const container = new ServiceContainer();
       new TrieRouterJsonSchema(container);
       const throwable = v => () => {
@@ -536,7 +536,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/',
           meta: {
             jsonSchema: {
-              response: v,
+              responses: v,
             },
           },
         };
@@ -544,7 +544,7 @@ describe('TrieRouterJsonSchema', function () {
       };
       const error = v =>
         format(
-          'The "response" schema definition must be an Object ' +
+          'The "responses" schema definition must be an Object ' +
             'keyed by status codes, but %s was given.',
           v,
         );
@@ -563,7 +563,7 @@ describe('TrieRouterJsonSchema', function () {
         path: '/data',
         meta: {
           jsonSchema: {
-            response: {
+            responses: {
               200: {type: JsonType.OBJECT},
               404: {type: JsonType.STRING},
               '5xx': {type: JsonType.OBJECT},
@@ -591,7 +591,7 @@ describe('TrieRouterJsonSchema', function () {
         path: '/skip-res',
         meta: {
           jsonSchema: {
-            response: {
+            responses: {
               200: {type: JsonType.OBJECT},
             },
           },
@@ -1225,7 +1225,7 @@ describe('TrieRouterJsonSchema', function () {
         path: '/test',
         meta: {
           jsonSchema: {
-            response: {
+            responses: {
               200: {type: JsonType.NUMBER},
             },
           },
@@ -1251,7 +1251,7 @@ describe('TrieRouterJsonSchema', function () {
         path: '/test',
         meta: {
           jsonSchema: {
-            response: {
+            responses: {
               200: {type: JsonType.NUMBER},
             },
           },
@@ -1277,7 +1277,7 @@ describe('TrieRouterJsonSchema', function () {
         path: '/test',
         meta: {
           jsonSchema: {
-            response: {
+            responses: {
               200: {type: JsonType.NUMBER},
             },
           },
@@ -1306,7 +1306,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 200: {type: JsonType.NUMBER},
               },
             },
@@ -1331,7 +1331,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 200: {
                   type: JsonType.OBJECT,
                   properties: {
@@ -1368,7 +1368,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 200: {
                   type: JsonType.OBJECT,
                   properties: {
@@ -1402,7 +1402,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 '2xx': {type: JsonType.NUMBER},
               },
             },
@@ -1427,7 +1427,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 '2xx': {
                   type: JsonType.OBJECT,
                   properties: {
@@ -1463,7 +1463,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 '2XX': {
                   type: JsonType.OBJECT,
                   properties: {
@@ -1499,7 +1499,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 '2xx': {
                   type: JsonType.OBJECT,
                   properties: {
@@ -1533,7 +1533,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 default: {
                   type: JsonType.OBJECT,
                   properties: {
@@ -1570,7 +1570,7 @@ describe('TrieRouterJsonSchema', function () {
           path: '/test',
           meta: {
             jsonSchema: {
-              response: {
+              responses: {
                 DEFAULT: {
                   type: JsonType.OBJECT,
                   properties: {

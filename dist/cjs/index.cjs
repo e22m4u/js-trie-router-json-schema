@@ -370,15 +370,15 @@ function onDefineRouteJsonSchemaHook(routeDef, container) {
       inst._requestBodyValidators.set(routeKey, validateRequestBody);
     }
   }
-  if (!options.noResponseValidation && schemaObj.response !== void 0) {
-    if (schemaObj.response === null || typeof schemaObj.response !== "object" || Array.isArray(schemaObj.response)) {
+  if (!options.noResponseValidation && schemaObj.responses !== void 0) {
+    if (schemaObj.responses === null || typeof schemaObj.responses !== "object" || Array.isArray(schemaObj.responses)) {
       throw new import_js_format2.InvalidArgumentError(
-        'The "response" schema definition must be an Object keyed by status codes, but %v was given.',
-        schemaObj.response
+        'The "responses" schema definition must be an Object keyed by status codes, but %v was given.',
+        schemaObj.responses
       );
     }
     const responseValidators = {};
-    for (const [statusCode, schema] of Object.entries(schemaObj.response)) {
+    for (const [statusCode, schema] of Object.entries(schemaObj.responses)) {
       const wrappedResponseSchema = {
         type: "object",
         properties: { response: schema },
