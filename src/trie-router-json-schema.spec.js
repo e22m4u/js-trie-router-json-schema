@@ -1636,103 +1636,133 @@ describe('TrieRouterJsonSchema', function () {
   });
 
   describe('parseJsonParameters', function () {
+    it('should require the parameter "ajv" to be a valid Ajv instance', function () {
+      const throwable = v => () => {
+        parseJsonParameters({}, {}, v);
+      };
+      const error = s =>
+        format('Parameter "ajv" must be an Ajv instance, but %s was given.', s);
+      expect(throwable('str')).to.throw(error('"str"'));
+      expect(throwable(10)).to.throw(error('10'));
+      expect(throwable(true)).to.throw(error('true'));
+      expect(throwable({})).to.throw(error('Object'));
+      expect(throwable([])).to.throw(error('Array'));
+      expect(throwable(undefined)).to.throw(error('undefined'));
+      expect(throwable(null)).to.throw(error('null'));
+    });
+
     it('should return the original value when "params" is a string', function () {
-      const result = parseJsonParameters('string', {});
+      const ajv = createAjv();
+      const result = parseJsonParameters('string', {}, ajv);
       expect(result).to.be.eq('string');
     });
 
     it('should return the original value when "params" is a number', function () {
-      const result = parseJsonParameters(123, {});
+      const ajv = createAjv();
+      const result = parseJsonParameters(123, {}, ajv);
       expect(result).to.be.eq(123);
     });
 
     it('should return the original value when "params" is an array', function () {
+      const ajv = createAjv();
       const params = [1, 2, 3];
-      const result = parseJsonParameters(params, {});
+      const result = parseJsonParameters(params, {}, ajv);
       expect(result).to.be.eq(params);
     });
 
     it('should return the original value when "params" is undefined', function () {
-      const result = parseJsonParameters(undefined, {});
+      const ajv = createAjv();
+      const result = parseJsonParameters(undefined, {}, ajv);
       expect(result).to.be.undefined;
     });
 
     it('should return the original value when "params" is null', function () {
-      const result = parseJsonParameters(null, {});
+      const ajv = createAjv();
+      const result = parseJsonParameters(null, {}, ajv);
       expect(result).to.be.null;
     });
 
     it('should return a new object with original values when "schema" is undefined', function () {
+      const ajv = createAjv();
       const params = {foo: '{"bar": 1}'};
-      const result = parseJsonParameters(params, undefined);
+      const result = parseJsonParameters(params, undefined, ajv);
       expect(result).to.be.eql(params);
       expect(result).to.be.not.eq(params);
     });
 
     it('should return original values when "schema" lacks the "properties" object', function () {
+      const ajv = createAjv();
       const params = {foo: '{"bar": 1}'};
       const schema = {type: JsonType.OBJECT};
-      const result = parseJsonParameters(params, schema);
+      const result = parseJsonParameters(params, schema, ajv);
       expect(result).to.be.eql(params);
     });
 
     describe('parsing objects', function () {
       it('should parse a valid JSON string into an object when schema expects an object', function () {
+        const ajv = createAjv();
         const params = {filter: '{"active": true}'};
         const schema = {properties: {filter: {type: JsonType.OBJECT}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.filter).to.be.an('object');
         expect(result.filter).to.be.eql({active: true});
       });
 
       it('should fallback to the original string when JSON string is invalid', function () {
+        const ajv = createAjv();
         const params = {filter: '{active: true}'}; // нет кавычек у ключа
         const schema = {properties: {filter: {type: JsonType.OBJECT}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.filter).to.be.eq('{active: true}');
       });
 
       it('should not parse when a string looks like an array but the schema expects an object', function () {
+        const ajv = createAjv();
         const params = {filter: '[1, 2, 3]'};
         const schema = {properties: {filter: {type: JsonType.OBJECT}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.filter).to.be.eq('[1, 2, 3]');
       });
     });
 
     describe('parsing arrays', function () {
       it('should parse a valid JSON string into an array when the schema expects an array', function () {
+        const ajv = createAjv();
         const params = {tags: '["news", "updates"]'};
         const schema = {properties: {tags: {type: JsonType.ARRAY}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.tags).to.be.an('array');
         expect(result.tags).to.be.eql(['news', 'updates']);
       });
 
       it('should fallback to the original string when JSON array is invalid', function () {
+        const ajv = createAjv();
         const params = {tags: '["news", "updates"'}; // нет закрывающей скобки
         const schema = {properties: {tags: {type: JsonType.ARRAY}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.tags).to.be.eq('["news", "updates"');
       });
 
       it('should not parse when a string looks like an object but the schema expects an array', function () {
+        const ajv = createAjv();
         const params = {tags: '{"news": true}'};
         const schema = {properties: {tags: {type: JsonType.ARRAY}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.tags).to.be.eq('{"news": true}');
       });
     });
 
     describe('edge cases and specific behaviors', function () {
       it('should correctly parse strings that have trailing or leading whitespaces', function () {
+        const ajv = createAjv();
         const params = {data: '  {"key": "value"}  '};
         const schema = {properties: {data: {type: JsonType.OBJECT}}};
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.data).to.be.eql({key: 'value'});
       });
 
       it('should support schema types defined as an array of strings', function () {
+        const ajv = createAjv();
         const params = {data: '{"key": "value"}'};
         const schema = {
           properties: {
@@ -1741,11 +1771,12 @@ describe('TrieRouterJsonSchema', function () {
             },
           },
         };
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.data).to.be.eql({key: 'value'});
       });
 
       it('should pass non-string values through without modifying them', function () {
+        const ajv = createAjv();
         const params = {
           num: 42,
           bool: true,
@@ -1758,13 +1789,14 @@ describe('TrieRouterJsonSchema', function () {
             alreadyObj: {type: JsonType.OBJECT},
           },
         };
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.num).to.be.eq(42);
         expect(result.bool).to.be.true;
         expect(result.alreadyObj).to.be.eql({foo: 'bar'});
       });
 
       it('should only parse fields defined in the schema and leave others intact', function () {
+        const ajv = createAjv();
         const params = {
           parsedField: '{"a": 1}',
           unparsedField: '{"b": 2}',
@@ -1775,7 +1807,7 @@ describe('TrieRouterJsonSchema', function () {
             // unparsedField отсутствует в схеме
           },
         };
-        const result = parseJsonParameters(params, schema);
+        const result = parseJsonParameters(params, schema, ajv);
         expect(result.parsedField).to.be.eql({a: 1});
         expect(result.unparsedField).to.be.eq('{"b": 2}');
       });
@@ -1805,13 +1837,6 @@ describe('TrieRouterJsonSchema', function () {
         const params = {filter: '{"active": true}'};
         const schema = {properties: {filter: {$ref: 'unknownSchema'}}};
         const result = parseJsonParameters(params, schema, ajv);
-        expect(result.filter).to.be.eq('{"active": true}');
-      });
-
-      it('should not parse a value when no Ajv instance is provided and the property uses "$ref"', function () {
-        const params = {filter: '{"active": true}'};
-        const schema = {properties: {filter: {$ref: 'filterSchema'}}};
-        const result = parseJsonParameters(params, schema, undefined);
         expect(result.filter).to.be.eq('{"active": true}');
       });
 

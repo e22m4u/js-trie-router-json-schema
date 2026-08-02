@@ -508,6 +508,12 @@ function responseValidationJsonSchemaHook(ctx, data) {
 }
 __name(responseValidationJsonSchemaHook, "responseValidationJsonSchemaHook");
 function parseJsonParameters(params, schema, ajv) {
+  if (!ajv || typeof ajv.getSchema !== "function") {
+    throw new import_js_format2.InvalidArgumentError(
+      'Parameter "ajv" must be an Ajv instance, but %v was given.',
+      ajv
+    );
+  }
   if (!params || typeof params !== "object" || Array.isArray(params)) {
     return params;
   }

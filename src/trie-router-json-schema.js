@@ -546,10 +546,16 @@ export function responseValidationJsonSchemaHook(ctx, data) {
  *
  * @param {object|undefined} params Объект параметров запроса.
  * @param {object|undefined} schema Схема объекта параметров.
- * @param {import('ajv/dist/2020.js').Ajv2020|undefined} ajv Требуется для разрешения $ref.
+ * @param {import('ajv/dist/2020.js').Ajv2020} ajv Требуется для разрешения $ref.
  * @returns {object|undefined}
  */
 export function parseJsonParameters(params, schema, ajv) {
+  if (!ajv || typeof ajv.getSchema !== 'function') {
+    throw new InvalidArgumentError(
+      'Parameter "ajv" must be an Ajv instance, but %v was given.',
+      ajv,
+    );
+  }
   if (!params || typeof params !== 'object' || Array.isArray(params)) {
     return params;
   }
