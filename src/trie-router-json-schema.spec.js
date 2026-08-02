@@ -3,10 +3,12 @@ import {Readable} from 'stream';
 import HttpErrors from 'http-errors';
 import {format} from '@e22m4u/js-format';
 import {JsonType} from './json-schema.js';
+import {createAjv} from './create-ajv.js';
 import {ServiceContainer} from '@e22m4u/js-service';
 import {RouterHookRegistry, RouterHookType} from '@e22m4u/js-trie-router';
 
 import {
+  resolveSchemaType,
   parseJsonParameters,
   TrieRouterJsonSchema,
   onDefineRouteJsonSchemaHook,
@@ -762,6 +764,43 @@ describe('TrieRouterJsonSchema', function () {
                       active: {type: JsonType.BOOLEAN},
                     },
                   },
+                },
+              },
+            },
+          },
+        };
+        onDefineRouteJsonSchemaHook(routeDef, container);
+        const ctx = {
+          container,
+          route: {method: 'GET', path: '/test'},
+          meta: routeDef.meta,
+          params: {filter: '{"active":true}'},
+          query: {},
+          headers: {},
+          cookies: {},
+        };
+        requestValidationJsonSchemaHook(ctx);
+        expect(ctx.params.filter).to.be.an('object');
+        expect(ctx.params.filter).to.be.eql({active: true});
+      });
+
+      it('should resolve a "$ref" and parse a JSON string into an object within params', function () {
+        const container = new ServiceContainer();
+        const schemaService = container.get(TrieRouterJsonSchema);
+        schemaService.defineSchema({
+          $id: 'filterSchema',
+          type: JsonType.OBJECT,
+          properties: {active: {type: JsonType.BOOLEAN}},
+        });
+        const routeDef = {
+          method: 'GET',
+          path: '/test',
+          meta: {
+            jsonSchema: {
+              params: {
+                type: JsonType.OBJECT,
+                properties: {
+                  filter: {$ref: 'filterSchema'},
                 },
               },
             },
@@ -1740,6 +1779,132 @@ describe('TrieRouterJsonSchema', function () {
         expect(result.parsedField).to.be.eql({a: 1});
         expect(result.unparsedField).to.be.eq('{"b": 2}');
       });
+    });
+
+    describe('parsing via "$ref"', function () {
+      it('should parse a JSON string into an object when the referenced schema expects an object', function () {
+        const ajv = createAjv();
+        ajv.addSchema({$id: 'filterSchema', type: JsonType.OBJECT});
+        const params = {filter: '{"active": true}'};
+        const schema = {properties: {filter: {$ref: 'filterSchema'}}};
+        const result = parseJsonParameters(params, schema, ajv);
+        expect(result.filter).to.be.eql({active: true});
+      });
+
+      it('should parse a JSON string into an array when the referenced schema expects an array', function () {
+        const ajv = createAjv();
+        ajv.addSchema({$id: 'tagsSchema', type: JsonType.ARRAY});
+        const params = {tags: '["news", "updates"]'};
+        const schema = {properties: {tags: {$ref: 'tagsSchema'}}};
+        const result = parseJsonParameters(params, schema, ajv);
+        expect(result.tags).to.be.eql(['news', 'updates']);
+      });
+
+      it('should not parse a value when the referenced schema is not registered in Ajv', function () {
+        const ajv = createAjv();
+        const params = {filter: '{"active": true}'};
+        const schema = {properties: {filter: {$ref: 'unknownSchema'}}};
+        const result = parseJsonParameters(params, schema, ajv);
+        expect(result.filter).to.be.eq('{"active": true}');
+      });
+
+      it('should not parse a value when no Ajv instance is provided and the property uses "$ref"', function () {
+        const params = {filter: '{"active": true}'};
+        const schema = {properties: {filter: {$ref: 'filterSchema'}}};
+        const result = parseJsonParameters(params, schema, undefined);
+        expect(result.filter).to.be.eq('{"active": true}');
+      });
+
+      it('should prioritize the "type" keyword defined directly on the property over "$ref"', function () {
+        const ajv = createAjv();
+        ajv.addSchema({$id: 'tagsSchema', type: JsonType.ARRAY});
+        const params = {filter: '{"active": true}'};
+        const schema = {
+          properties: {filter: {type: JsonType.OBJECT, $ref: 'tagsSchema'}},
+        };
+        const result = parseJsonParameters(params, schema, ajv);
+        expect(result.filter).to.be.eql({active: true});
+      });
+    });
+  });
+
+  describe('resolveSchemaType', function () {
+    it('should return undefined when the schema is undefined', function () {
+      const result = resolveSchemaType(undefined, undefined);
+      expect(result).to.be.undefined;
+    });
+
+    it('should return undefined when the schema is null', function () {
+      const result = resolveSchemaType(null, undefined);
+      expect(result).to.be.undefined;
+    });
+
+    it('should return undefined when the schema is not an Object', function () {
+      const result = resolveSchemaType('not-a-schema', undefined);
+      expect(result).to.be.undefined;
+    });
+
+    it('should return undefined when the schema is an Array', function () {
+      const result = resolveSchemaType([], undefined);
+      expect(result).to.be.undefined;
+    });
+
+    it('should return the "type" keyword when it is defined directly on the schema', function () {
+      const result = resolveSchemaType({type: JsonType.OBJECT}, undefined);
+      expect(result).to.be.eq(JsonType.OBJECT);
+    });
+
+    it('should return an array of types when the "type" keyword is an array', function () {
+      const schema = {type: [JsonType.STRING, JsonType.OBJECT]};
+      const result = resolveSchemaType(schema, undefined);
+      expect(result).to.be.eql([JsonType.STRING, JsonType.OBJECT]);
+    });
+
+    it('should return undefined when the schema has a "$ref" but no Ajv instance is given', function () {
+      const result = resolveSchemaType({$ref: 'user'}, undefined);
+      expect(result).to.be.undefined;
+    });
+
+    it('should return undefined when the referenced schema is not registered in Ajv', function () {
+      const ajv = createAjv();
+      const result = resolveSchemaType({$ref: 'user'}, ajv);
+      expect(result).to.be.undefined;
+    });
+
+    it('should resolve the "type" keyword from a schema registered by "$id"', function () {
+      const ajv = createAjv();
+      ajv.addSchema({$id: 'user', type: JsonType.OBJECT});
+      const result = resolveSchemaType({$ref: 'user'}, ajv);
+      expect(result).to.be.eq(JsonType.OBJECT);
+    });
+
+    it('should follow a chain of "$ref" references until a "type" is found', function () {
+      const ajv = createAjv();
+      ajv.addSchema({$id: 'userRef', $ref: 'user'});
+      ajv.addSchema({$id: 'user', type: JsonType.OBJECT});
+      const result = resolveSchemaType({$ref: 'userRef'}, ajv);
+      expect(result).to.be.eq(JsonType.OBJECT);
+    });
+
+    it('should stop following a circular "$ref" chain and return undefined', function () {
+      // schemaA -> schemaB -> schemaA -> ... без ключа "type"
+      const ajv = createAjv();
+      ajv.addSchema({$id: 'schemaA', $ref: 'schemaB'});
+      ajv.addSchema({$id: 'schemaB', $ref: 'schemaA'});
+      const result = resolveSchemaType({$ref: 'schemaA'}, ajv);
+      expect(result).to.be.undefined;
+    });
+
+    it('should not exceed the maximum resolution depth', function () {
+      // цепочка из 16 ссылок превышает лимит глубины (10),
+      // поэтому итоговый "type" не должен быть найден
+      const ajv = createAjv();
+      for (let i = 0; i < 15; i++) {
+        ajv.addSchema({$id: `link${i}`, $ref: `link${i + 1}`});
+      }
+      ajv.addSchema({$id: 'link15', type: JsonType.OBJECT});
+      const result = resolveSchemaType({$ref: 'link0'}, ajv);
+      expect(result).to.be.undefined;
     });
   });
 });

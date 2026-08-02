@@ -412,21 +412,26 @@ function requestValidationJsonSchemaHook(ctx) {
       cookies: ctx.cookies
     };
     if (!options.noParseParametersJson) {
+      const ajv = inst._getParametersAjvInstance();
       reqParameters.params = parseJsonParameters(
         reqParameters.params,
-        schemaObject.params
+        schemaObject.params,
+        ajv
       );
       reqParameters.query = parseJsonParameters(
         reqParameters.query,
-        schemaObject.query
+        schemaObject.query,
+        ajv
       );
       reqParameters.headers = parseJsonParameters(
         reqParameters.headers,
-        schemaObject.headers
+        schemaObject.headers,
+        ajv
       );
       reqParameters.cookies = parseJsonParameters(
         reqParameters.cookies,
-        schemaObject.cookies
+        schemaObject.cookies,
+        ajv
       );
     }
     const isValid = validateParams(reqParameters);
@@ -502,7 +507,7 @@ function responseValidationJsonSchemaHook(ctx, data) {
   return;
 }
 __name(responseValidationJsonSchemaHook, "responseValidationJsonSchemaHook");
-function parseJsonParameters(params, schema) {
+function parseJsonParameters(params, schema, ajv) {
   if (!params || typeof params !== "object" || Array.isArray(params)) {
     return params;
   }
@@ -512,13 +517,10 @@ function parseJsonParameters(params, schema) {
     const val = params[key];
     const valStr = typeof val === "string" ? val.trim() : "";
     const propSchema = properties && properties[key] || void 0;
-    let expectsObject = false;
-    let expectsArray = false;
-    if (propSchema && typeof propSchema === "object" && !Array.isArray(propSchema) && propSchema.type) {
-      const types = Array.isArray(propSchema.type) ? propSchema.type : [propSchema.type];
-      expectsObject = types.includes(JsonType.OBJECT);
-      expectsArray = types.includes(JsonType.ARRAY);
-    }
+    const resolvedType = resolveSchemaType(propSchema, ajv);
+    const types = resolvedType ? Array.isArray(resolvedType) ? resolvedType : [resolvedType] : [];
+    const expectsObject = types.includes(JsonType.OBJECT);
+    const expectsArray = types.includes(JsonType.ARRAY);
     if (valStr && (expectsObject && valStr.startsWith("{") && valStr.endsWith("}") || expectsArray && valStr.startsWith("[") && valStr.endsWith("]"))) {
       try {
         result[key] = JSON.parse(valStr);
@@ -532,6 +534,23 @@ function parseJsonParameters(params, schema) {
   return result;
 }
 __name(parseJsonParameters, "parseJsonParameters");
+function resolveSchemaType(schema, ajv, depth = 0) {
+  if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
+    return void 0;
+  }
+  if (schema.type) {
+    return schema.type;
+  }
+  if (!schema.$ref || !ajv || depth >= 10) {
+    return void 0;
+  }
+  const resolved = ajv.getSchema(schema.$ref);
+  if (!resolved || !resolved.schema) {
+    return void 0;
+  }
+  return resolveSchemaType(resolved.schema, ajv, depth + 1);
+}
+__name(resolveSchemaType, "resolveSchemaType");
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   JsonType,

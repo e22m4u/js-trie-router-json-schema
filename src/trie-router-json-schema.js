@@ -415,21 +415,26 @@ export function requestValidationJsonSchemaHook(ctx) {
     // парсинг строковых значений,
     // похожих на массивы или объекты
     if (!options.noParseParametersJson) {
+      const ajv = inst._getParametersAjvInstance();
       reqParameters.params = parseJsonParameters(
         reqParameters.params,
         schemaObject.params,
+        ajv,
       );
       reqParameters.query = parseJsonParameters(
         reqParameters.query,
         schemaObject.query,
+        ajv,
       );
       reqParameters.headers = parseJsonParameters(
         reqParameters.headers,
         schemaObject.headers,
+        ajv,
       );
       reqParameters.cookies = parseJsonParameters(
         reqParameters.cookies,
         schemaObject.cookies,
+        ajv,
       );
     }
     const isValid = validateParams(reqParameters);
@@ -539,11 +544,12 @@ export function responseValidationJsonSchemaHook(ctx, data) {
 /**
  * Parse JSON parameters based on JSON Schema types.
  *
- * @param {object|undefined} params
- * @param {object|undefined} schema
+ * @param {object|undefined} params Объект параметров запроса.
+ * @param {object|undefined} schema Схема объекта параметров.
+ * @param {import('ajv/dist/2020.js').Ajv2020|undefined} ajv Требуется для разрешения $ref.
  * @returns {object|undefined}
  */
-export function parseJsonParameters(params, schema) {
+export function parseJsonParameters(params, schema, ajv) {
   if (!params || typeof params !== 'object' || Array.isArray(params)) {
     return params;
   }
@@ -565,24 +571,16 @@ export function parseJsonParameters(params, schema) {
     // если объект "properties" определен, то выполняется
     // извлечение схемы конкретного свойства
     const propSchema = (properties && properties[key]) || undefined;
-    let expectsObject = false;
-    let expectsArray = false;
-    // если схема для поля найдена,
-    // то проверяются разрешенные типы
-    if (
-      propSchema &&
-      typeof propSchema === 'object' &&
-      !Array.isArray(propSchema) &&
-      propSchema.type
-    ) {
-      const types = Array.isArray(propSchema.type)
-        ? propSchema.type
-        : [propSchema.type];
-      expectsObject = types.includes(JsonType.OBJECT);
-      expectsArray = types.includes(JsonType.ARRAY);
-    }
-    // парсинг выполняется только если схема
-    // явно ожидает тип "object" или "array"
+    // тип определяется как напрямую (propSchema.type), так и через
+    // резолв $ref-ссылки на уже зарегистрированную в Ajv схему
+    const resolvedType = resolveSchemaType(propSchema, ajv);
+    const types = resolvedType
+      ? Array.isArray(resolvedType)
+        ? resolvedType
+        : [resolvedType]
+      : [];
+    const expectsObject = types.includes(JsonType.OBJECT);
+    const expectsArray = types.includes(JsonType.ARRAY);
     if (
       valStr &&
       ((expectsObject && valStr.startsWith('{') && valStr.endsWith('}')) ||
@@ -598,4 +596,33 @@ export function parseJsonParameters(params, schema) {
     }
   }
   return result;
+}
+
+/**
+ * Определить ключевое слово "type" схемы, следуя по локальным
+ * ссылкам $ref, зарегистрированным в переданном экземпляре Ajv.
+ * Используется, так как ссылающаяся схема `{$ref: 'foo'}` сама
+ * по себе не содержит "type", ведь он находится в целевой схеме.
+ *
+ * @param {object|undefined} schema
+ * @param {import('ajv/dist/2020.js').Ajv2020|undefined} ajv
+ * @param {number} [depth]
+ * @returns {string|string[]|undefined}
+ */
+export function resolveSchemaType(schema, ajv, depth = 0) {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    return undefined;
+  }
+  if (schema.type) {
+    return schema.type;
+  }
+  // защита от цикличных или чрезмерно длинных цепочек ссылок
+  if (!schema.$ref || !ajv || depth >= 10) {
+    return undefined;
+  }
+  const resolved = ajv.getSchema(schema.$ref);
+  if (!resolved || !resolved.schema) {
+    return undefined;
+  }
+  return resolveSchemaType(resolved.schema, ajv, depth + 1);
 }
