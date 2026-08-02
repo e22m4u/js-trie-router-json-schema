@@ -26,15 +26,15 @@ declare module '@e22m4u/js-trie-router' {
  * Trie router json schema options.
  */
 export type TrieRouterJsonSchemaOptions = {
-  noRequestValidation: boolean;
-  noResponseValidation: boolean;
-  noParseParametersJson: boolean;
-  noCoerceTypesInParameters: boolean;
-  noCoerceTypesInRequestBody: boolean;
-  noCoerceTypesInResponseBody: boolean;
-  noDefaultValuesInParameters: boolean;
-  noDefaultValuesInRequestBody: boolean;
-  noDefaultValuesInResponseBody: boolean;
+  noRequestValidation?: boolean;
+  noResponseValidation?: boolean;
+  noParseParametersJson?: boolean;
+  noCoerceTypesInParameters?: boolean;
+  noCoerceTypesInRequestBody?: boolean;
+  noCoerceTypesInResponseBody?: boolean;
+  noDefaultValuesInParameters?: boolean;
+  noDefaultValuesInRequestBody?: boolean;
+  noDefaultValuesInResponseBody?: boolean;
 };
 
 /**
@@ -48,7 +48,7 @@ export class TrieRouterJsonSchema extends Service {
    * @param options
    */
   constructor(
-    container: ServiceContainer,
+    container?: ServiceContainer,
     options?: TrieRouterJsonSchemaOptions,
   );
 }
